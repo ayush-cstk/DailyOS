@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   description: "Manage tasks, track workouts, and log meals — all in one place.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "DailyOS" },
+  icons: {
+    icon: [{ url: "/BrandLogo_Header.png", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/BrandLogo_Header.png", sizes: "512x512", type: "image/png" }],
+    shortcut: "/BrandLogo_Header.png",
+  },
 };
 
 export const viewport: Viewport = {

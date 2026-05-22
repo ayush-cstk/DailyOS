@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { CheckSquare, Dumbbell, Utensils, Sparkles, LogOut, User } from "lucide-react";
+import { CheckSquare, Dumbbell, Utensils, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -22,9 +22,7 @@ export default function Navigation() {
       <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-100 min-h-screen sticky top-0 shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-50">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-200/50">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          <Image src="/BrandLogo_Header.png" alt="DailyOS" width={32} height={32} className="rounded-xl" />
           <span className="font-black text-gray-900 text-lg tracking-tight">DailyOS</span>
         </div>
 
@@ -79,9 +77,7 @@ export default function Navigation() {
       {/* ── Mobile top header ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 h-14 flex items-center px-4 safe-top">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
-          </div>
+          <Image src="/BrandLogo_Header.png" alt="DailyOS" width={28} height={28} className="rounded-lg" />
           <span className="font-black text-gray-900">DailyOS</span>
         </div>
         {/* Active section label */}
