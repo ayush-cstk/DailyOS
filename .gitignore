@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment & secrets (keep *.example templates tracked)
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Vercel / deploy
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs & debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# Optional tooling caches
+.eslintcache
+.turbo/
+.cache/
+
+# Firebase / GCP service accounts (if you add them locally)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Local editor (uncomment if your team does not share VS Code settings)
+# .vscode/
