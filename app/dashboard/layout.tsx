@@ -8,7 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Desktop: sidebar | Mobile: bottom nav */}
       <div className="flex flex-1 overflow-hidden">
         <Navigation />
-        <main className="flex-1 overflow-y-auto pb-28 md:pb-0 md:pl-0">
+        <main className="flex-1 overflow-y-auto pt-14 md:pt-0 pb-28 md:pb-0 md:pl-0">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
             {children}
           </div>

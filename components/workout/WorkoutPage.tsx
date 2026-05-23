@@ -256,9 +256,9 @@ export default function WorkoutPage() {
 
       {/* Body Weight Modal */}
       {showBodyWeightModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowBodyWeightModal(false)} />
-          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 animate-slide-up">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-5 animate-slide-up max-h-[80dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">Log Body Weight</h3>
               <button onClick={() => setShowBodyWeightModal(false)} className="btn-ghost p-1.5"><X className="w-4 h-4" /></button>

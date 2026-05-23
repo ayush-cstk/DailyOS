@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, Dumbbell, Utensils, CheckSquare, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownText } from "@/components/ui/MarkdownText";
+import { getDietContext } from "@/lib/orbitContext";
 
 type Mode = "workout" | "diet" | "tasks" | null;
 type Message = { role: "user" | "assistant"; content: string };
@@ -99,10 +100,13 @@ export default function AriaChatbot() {
     setLoading(true);
 
     try {
+      // In diet mode, attach today's meal data so Orbit can answer contextually
+      const dietContext = mode === "diet" ? getDietContext() : null;
+
       const res = await fetch("/api/aria", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, mode }),
+        body: JSON.stringify({ messages: next, mode, dietContext }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, {

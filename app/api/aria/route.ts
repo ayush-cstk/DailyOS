@@ -27,9 +27,29 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { messages, mode } = await req.json();
+  const { messages, mode, dietContext } = await req.json();
 
-  const systemPrompt = BASE_SYSTEM + (mode && MODE_CONTEXT[mode] ? MODE_CONTEXT[mode] : "");
+  let systemPrompt = BASE_SYSTEM + (mode && MODE_CONTEXT[mode] ? MODE_CONTEXT[mode] : "");
+
+  // Inject today's real meal data when available in diet mode
+  if (mode === "diet" && dietContext) {
+    const { date, meals, totals, goals } = dietContext;
+    const mealLines = meals.length > 0
+      ? meals.map((m: any) => `  - ${m.name}: ${m.calories} kcal | ${m.proteinG}g P | ${m.carbsG}g C | ${m.fatG}g F`).join("\n")
+      : "  (no meals logged yet)";
+
+    systemPrompt += `
+
+=== USER'S ACTUAL DATA FOR ${date} ===
+Meals logged today:
+${mealLines}
+
+Totals so far: ${totals.calories} kcal | ${totals.proteinG}g protein | ${totals.carbsG}g carbs | ${totals.fatG}g fat
+Daily goals:   ${goals.calories} kcal | ${goals.proteinG}g protein | ${goals.carbsG}g carbs | ${goals.fatG}g fat
+Remaining:     ${Math.max(0, goals.calories - totals.calories)} kcal | ${Math.max(0, goals.proteinG - totals.proteinG)}g protein | ${Math.max(0, goals.carbsG - totals.carbsG)}g carbs | ${Math.max(0, goals.fatG - totals.fatG)}g fat
+
+Use this REAL data to answer questions about what the user has eaten, what they should eat next, and how to hit their remaining macros. Be specific and reference the actual meals listed.`
+  }
 
   try {
     const completion = await openai.chat.completions.create({

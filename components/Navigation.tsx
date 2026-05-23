@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon } from "lucide-react";
+import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const navItems = [
   { href: "/dashboard/tasks",   icon: CheckSquare, label: "Tasks",   color: "text-violet-600", activeBg: "bg-violet-50 dark:bg-violet-950/50", activeText: "text-violet-700 dark:text-violet-300", dot: "bg-violet-500" },
@@ -37,6 +37,20 @@ function ThemeToggle({ iconSize = "w-4 h-4" }: { iconSize?: string }) {
 export default function Navigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
+    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+  }, [showProfileMenu]);
 
   return (
     <>
@@ -115,15 +129,40 @@ export default function Navigation() {
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle iconSize="w-3.5 h-3.5" />
           {session?.user && (
-            <>
-              {session.user.image ? (
-                <Image src={session.user.image} alt="avatar" width={28} height={28} className="rounded-full" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <div ref={profileRef} className="relative">
+              <button
+                onClick={() => setShowProfileMenu(v => !v)}
+                className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all"
+              >
+                {session.user.image ? (
+                  <Image src={session.user.image} alt="avatar" width={28} height={28} className="rounded-full ring-2 ring-indigo-100 dark:ring-indigo-900" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                )}
+                <ChevronDown className={cn("w-3 h-3 text-gray-400 transition-transform duration-200", showProfileMenu && "rotate-180")} />
+              </button>
+
+              {/* Profile dropdown */}
+              {showProfileMenu && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden z-50 animate-scale-in">
+                  {/* User info */}
+                  <div className="px-4 py-3.5 border-b border-gray-50 dark:border-gray-800">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{session.user.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{session.user.email}</p>
+                  </div>
+                  {/* Sign out */}
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 active:scale-[0.98] transition-all"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

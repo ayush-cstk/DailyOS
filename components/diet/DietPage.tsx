@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { cn, todayString, formatDate } from "@/lib/utils";
 import { getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals } from "@/lib/firestore";
+import { setDietContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import type { MealEntry, MealMacros, MacroGoals } from "@/types";
 
@@ -104,6 +105,27 @@ export default function DietPage() {
     }),
     { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
   );
+
+  // Keep Orbit's diet context in sync so it can answer meal-specific questions
+  useEffect(() => {
+    setDietContext({
+      date,
+      meals: meals.map((m) => ({
+        name: m.name,
+        calories: Math.round(m.macros.calories),
+        proteinG: Math.round(m.macros.proteinG),
+        carbsG: Math.round(m.macros.carbsG),
+        fatG: Math.round(m.macros.fatG),
+      })),
+      totals: {
+        calories: Math.round(totals.calories),
+        proteinG: Math.round(totals.proteinG),
+        carbsG: Math.round(totals.carbsG),
+        fatG: Math.round(totals.fatG),
+      },
+      goals,
+    });
+  }, [meals, goals, date, totals.calories, totals.proteinG, totals.carbsG, totals.fatG]);
 
   const handleAddMeal = async (meal: Omit<MealEntry, "id">) => {
     const created = await addMeal(meal);
@@ -345,9 +367,9 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
 // ── Modal wrapper ─────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up">
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up max-h-[80dvh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-gray-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="btn-ghost p-1.5"><X className="w-4 h-4" /></button>
@@ -510,7 +532,7 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
             {scanning && (
               <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm font-semibold">Analyzing with GPT-4o…</span>
+                <span className="text-sm font-semibold">Analyzing the meal for you...</span>
               </div>
             )}
           </div>
