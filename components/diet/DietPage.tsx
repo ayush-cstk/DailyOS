@@ -272,13 +272,14 @@ export default function DietPage() {
         onClick={() => setShowScanner(true)}
         className="w-full mb-5 relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 p-px"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-[calc(1rem-1px)] px-4 py-3.5 flex items-center justify-center gap-2.5 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all">
+        <div className="rounded-[calc(1rem-1px)] px-4 py-3.5 flex items-center justify-center gap-2.5 hover:bg-emerald-500/5 transition-all"
+          style={{ background: "var(--surface-0)" }}>
           <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div className="text-left">
-            <p className="text-sm font-bold text-gray-900 dark:text-white">Scan meal with AI</p>
-            <p className="text-xs text-gray-400">Take a photo — GPT-4o estimates macros</p>
+            <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>Scan meal with AI</p>
+            <p className="text-xs" style={{ color: "var(--text-3)" }}>Take a photo — GPT-4o estimates macros</p>
           </div>
           <Camera className="w-4 h-4 text-emerald-500 ml-auto" />
         </div>
@@ -287,8 +288,8 @@ export default function DietPage() {
       {/* ── Meals list ── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
-            Meals <span className="text-gray-400 font-semibold">({meals.length})</span>
+          <h3 className="text-sm font-bold" style={{ color: "var(--text-2)" }}>
+            Meals <span className="font-semibold" style={{ color: "var(--text-3)" }}>({meals.length})</span>
           </h3>
         </div>
 
@@ -340,11 +341,11 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
   return (
     <div className="card flex items-center gap-3 hover:shadow-md transition-all duration-200 animate-slide-up"
       style={{ borderLeftColor: "#10B981", borderLeftWidth: "3px" }}>
-      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+      <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
         <Utensils className="w-4 h-4 text-emerald-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{meal.name}</p>
+        <p className="font-semibold text-sm truncate" style={{ color: "var(--text-1)" }}>{meal.name}</p>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {macros.map(({ label, value, bg, text, dot }) => (
             <span key={label} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold", bg, text)}>
@@ -356,7 +357,8 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
       </div>
       <button
         onClick={onDelete}
-        className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 active:scale-90 transition-all flex-shrink-0"
+        className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all flex-shrink-0"
+        style={{ color: "var(--text-3)" }}
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -368,10 +370,11 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up max-h-[80dvh] overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up max-h-[80dvh] overflow-y-auto"
+        style={{ background: "var(--surface-2)", border: "1px solid var(--border)", boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">{title}</h3>
+          <h3 className="text-base font-bold" style={{ color: "var(--text-1)" }}>{title}</h3>
           <button onClick={onClose} className="btn-ghost p-1.5"><X className="w-4 h-4" /></button>
         </div>
         {children}

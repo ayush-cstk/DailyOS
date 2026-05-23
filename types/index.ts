@@ -1,18 +1,20 @@
 // ── Task Management ────────────────────────────────────────────────────────────
 export type TaskFrequency = "daily" | "weekly";
 export type TaskStatus = "pending" | "completed";
+export type TaskPriority = "low" | "medium" | "high";
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
-  frequency: TaskFrequency;
+  frequency: TaskFrequency;   // kept for backward compat
+  dueDate?: string;           // ISO date string YYYY-MM-DD (scheduled date)
+  priority?: TaskPriority | null;
   status: TaskStatus;
   projectId: string;
   userId: string;
   createdAt: number;
   completedAt?: number;
-  dueDate?: string; // ISO date string YYYY-MM-DD
 }
 
 export interface Project {

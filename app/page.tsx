@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signIn } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import {
   CheckCircle2, Dumbbell, Utensils, ArrowRight, Zap, BarChart3,
@@ -48,7 +49,11 @@ const testimonials = [
 
 export default function LandingPage() {
   const { data: session } = useSession();
+  const { resolvedTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -56,14 +61,18 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  const logoSrc = mounted && resolvedTheme === "dark"
+    ? "/BrandLogo_Header_DarkMode.png"
+    : "/BrandLogo_Header.png";
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-black overflow-x-hidden">
 
       {/* ── Nav ── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg shadow-sm border-b border-gray-100 dark:border-gray-800" : "bg-transparent"}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 dark:bg-black/80 backdrop-blur-xl shadow-sm border-b border-gray-100 dark:border-white/[0.06]" : "bg-transparent"}`}>
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Image src="/BrandLogo_Header.png" alt="DailyOS" width={32} height={32} className="rounded-xl" />
+            <Image src={logoSrc} alt="DailyOS" width={32} height={32} className="rounded-xl" />
             <span className="font-black text-gray-900 dark:text-white text-lg tracking-tight">DailyOS</span>
           </div>
           <div className="flex items-center gap-3">
@@ -90,9 +99,9 @@ export default function LandingPage() {
       <section className="relative pt-32 pb-20 px-5 overflow-hidden">
         {/* Background blobs */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-100 via-purple-50 to-transparent opacity-70 blur-3xl" />
-          <div className="absolute top-60 -left-40 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-50 blur-3xl" />
-          <div className="absolute bottom-0 right-1/3 w-[300px] h-[300px] rounded-full bg-gradient-to-br from-emerald-50 to-transparent opacity-60 blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-100 via-purple-50 to-transparent opacity-70 dark:opacity-[0.07] dark:from-indigo-500 dark:via-purple-500 blur-3xl" />
+          <div className="absolute top-60 -left-40 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-50 dark:opacity-[0.06] dark:from-blue-500 blur-3xl" />
+          <div className="absolute bottom-0 right-1/3 w-[300px] h-[300px] rounded-full bg-gradient-to-br from-emerald-50 to-transparent opacity-60 dark:opacity-[0.05] dark:from-emerald-500 blur-3xl" />
         </div>
 
         <div className="max-w-5xl mx-auto text-center">
@@ -134,13 +143,13 @@ export default function LandingPage() {
 
         {/* ── App Preview ── */}
         <div className="max-w-5xl mx-auto mt-20 animate-slide-up" style={{animationDelay:"200ms"}}>
-          <div className="relative rounded-3xl overflow-hidden border border-gray-200 shadow-2xl shadow-gray-900/10 bg-[#F7F8FC] p-5">
+          <div className="relative rounded-3xl overflow-hidden border border-gray-200 dark:border-white/[0.06] shadow-2xl shadow-gray-900/10 dark:shadow-black/50 bg-[#F7F8FC] dark:bg-[#0a0a0a] p-5">
             {/* Fake browser bar */}
             <div className="flex items-center gap-2 mb-5">
               <div className="w-3 h-3 rounded-full bg-red-400" />
               <div className="w-3 h-3 rounded-full bg-amber-400" />
               <div className="w-3 h-3 rounded-full bg-emerald-400" />
-              <div className="flex-1 mx-4 bg-white rounded-lg h-7 flex items-center px-3">
+              <div className="flex-1 mx-4 bg-white dark:bg-[#111] rounded-lg h-7 flex items-center px-3 border border-transparent dark:border-white/[0.06]">
                 <span className="text-xs text-gray-400">dailyos.app/dashboard</span>
               </div>
             </div>
@@ -246,7 +255,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" className="py-24 px-5 bg-white dark:bg-gray-950">
+      <section id="features" className="py-24 px-5 bg-white dark:bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Features</p>
@@ -272,7 +281,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="py-24 px-5 bg-[#F7F8FC] dark:bg-gray-900">
+      <section className="py-24 px-5 bg-[#F7F8FC] dark:bg-[#0a0a0a]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Workflow</p>
@@ -298,7 +307,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="py-24 px-5 bg-white dark:bg-gray-950">
+      <section className="py-24 px-5 bg-white dark:bg-black">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <div className="flex items-center justify-center gap-1 mb-4">
@@ -354,9 +363,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-gray-950 text-gray-500 py-8 px-5 text-center text-sm">
+      <footer className="bg-black text-[#555] py-8 px-5 text-center text-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Image src="/BrandLogo_Header.png" alt="DailyOS" width={24} height={24} className="rounded-md" />
+          <Image src={logoSrc} alt="DailyOS" width={24} height={24} className="rounded-md" />
           <span className="text-white font-bold">DailyOS</span>
         </div>
         <p>© {new Date().getFullYear()} DailyOS · Built for people who do the work.</p>
