@@ -57,13 +57,13 @@ function ToastItem({ toast, onRemove }: { toast: ToastItem; onRemove: (id: strin
   return (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 py-3.5 rounded-2xl border shadow-lg max-w-sm w-full text-sm font-medium",
+        "flex items-center gap-3 px-4 py-3.5 rounded-2xl border shadow-lg max-w-sm w-full text-sm font-medium",
         "transition-all duration-300 ease-out",
         styles[toast.type],
         visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95"
       )}
     >
-      <Icon className={cn("w-4.5 h-4.5 flex-shrink-0 mt-0.5", iconStyles[toast.type])} />
+      <Icon className={cn("w-4 h-4 flex-shrink-0", iconStyles[toast.type])} />
       <span className="flex-1 leading-snug">{toast.message}</span>
       <button
         onClick={() => { setVisible(false); setTimeout(() => onRemove(toast.id), 300); }}

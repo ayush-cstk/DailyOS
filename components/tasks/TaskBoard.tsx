@@ -74,9 +74,14 @@ export default function TaskBoard() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    toast("Task deleted", "info");
+    try {
+      await deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      toast("Task deleted", "info");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast("Failed to delete task", "error");
+    }
   };
 
   const handleAddProject = async () => {
@@ -93,11 +98,12 @@ export default function TaskBoard() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Tasks</h1>
-          <p className="text-sm text-gray-400 mt-0.5 font-medium">Stay on top of what matters</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Tasks</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Stay on top of what matters</p>
         </div>
-        <button onClick={() => setShowAddTask(true)} className="btn-primary flex items-center gap-1.5 text-sm">
-          <Plus className="w-4 h-4" /> New task
+        <button onClick={() => setShowAddTask(true)} className="btn-primary flex items-center gap-1.5 text-sm flex-shrink-0">
+          <Plus className="w-4 h-4" />
+          <span>New task</span>
         </button>
       </div>
 
@@ -108,7 +114,7 @@ export default function TaskBoard() {
           return (
             <button key={p.id} onClick={() => setSelectedProject(p.id)}
               className={cn("flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-150 border",
-                active ? "text-white border-transparent shadow-sm" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300")}
+                active ? "text-white border-transparent shadow-sm" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300")}
               style={active ? { backgroundColor: p.color } : {}}>
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? "rgba(255,255,255,0.6)" : p.color }} />
               {p.name}
@@ -116,7 +122,7 @@ export default function TaskBoard() {
           );
         })}
         <button onClick={() => setShowAddProject(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-400 bg-white border border-dashed border-gray-300 hover:border-gray-400 hover:text-gray-600 whitespace-nowrap transition-all">
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-gray-400 bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 hover:text-gray-600 whitespace-nowrap transition-all">
           <Plus className="w-3.5 h-3.5" /> New project
         </button>
       </div>
@@ -140,11 +146,11 @@ export default function TaskBoard() {
         </div>
       )}
 
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6 w-fit">
         {(["daily", "weekly"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all duration-150",
-              tab === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-gray-600")}>
+              tab === t ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300")}>
             {t === "daily" ? <Calendar className="w-3.5 h-3.5" /> : <CalendarDays className="w-3.5 h-3.5" />}
             {t}
           </button>
@@ -169,7 +175,7 @@ export default function TaskBoard() {
             {pendingTasks.length === 0 ? (
               <div className="text-center py-12 card border-dashed border-2 border-gray-200">
                 <CheckCircle2 className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm font-medium">No {tab} tasks yet</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm font-medium">No {tab} tasks yet</p>
                 <button onClick={() => setShowAddTask(true)} className="mt-2 text-sm font-semibold text-indigo-500 hover:text-indigo-700 transition-colors">+ Add one</button>
               </div>
             ) : pendingTasks.map((task) => (
@@ -208,10 +214,10 @@ export default function TaskBoard() {
               <textarea className="input resize-none" rows={2} placeholder="Add details..."
                 value={newTaskDesc} onChange={(e) => setNewTaskDesc(e.target.value)} />
             </div>
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
               {(["daily", "weekly"] as Tab[]).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={cn("flex-1 py-2 rounded-lg text-xs font-bold capitalize transition-all", tab === t ? "bg-white shadow-sm text-gray-900" : "text-gray-400")}>
+                  className={cn("flex-1 py-2 rounded-lg text-xs font-bold capitalize transition-all", tab === t ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500")}>
                   {t}
                 </button>
               ))}
@@ -260,25 +266,28 @@ function TaskCard({ task, onToggle, onDelete, color }: {
 }) {
   const done = task.status === "completed";
   return (
-    <div className={cn("card flex items-start gap-3 group transition-all duration-200 animate-slide-up",
-      done ? "opacity-50" : "hover:shadow-md hover:-translate-y-px")}
+    <div className={cn("card flex items-center gap-3 transition-all duration-200 animate-slide-up",
+      done ? "opacity-50" : "hover:shadow-md")}
       style={!done ? { borderLeftColor: color, borderLeftWidth: "3px" } : {}}>
-      <button onClick={() => onToggle(task)} className="mt-0.5 flex-shrink-0 active:scale-90 transition-transform">
+      <button onClick={() => onToggle(task)} className="flex-shrink-0 active:scale-90 transition-transform">
         {done
           ? <CheckCircle2 className="w-5 h-5 animate-checkmark" style={{ color: color ?? "#6366f1" }} />
           : <Circle className="w-5 h-5 text-gray-300 hover:text-gray-400 transition-colors" />}
       </button>
       <div className="flex-1 min-w-0">
-        <p className={cn("text-sm font-semibold text-gray-900 leading-snug", done && "line-through text-gray-400")}>
+        <p className={cn("text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug", done && "line-through text-gray-400 dark:text-gray-600")}>
           {task.title}
         </p>
         {(task as any).description && (
           <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{(task as any).description}</p>
         )}
       </div>
-      <button onClick={() => onDelete(task.id)}
-        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all">
-        <Trash2 className="w-3.5 h-3.5" />
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+        className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 active:scale-90 transition-all flex-shrink-0"
+      >
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );
@@ -288,9 +297,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up">
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-900">{title}</h3>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="btn-ghost p-1.5"><X className="w-4 h-4" /></button>
         </div>
         {children}

@@ -7,7 +7,7 @@
 @layer base {
   * { box-sizing: border-box; }
   html { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { @apply bg-[#F7F8FC] text-gray-900 antialiased; }
+  body { @apply bg-[#F7F8FC] dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased; }
 }
 
 @layer components {
@@ -29,7 +29,7 @@
 
   /* ── Cards ── */
   .card {
-    @apply bg-white rounded-2xl border border-gray-100 p-4;
+    @apply bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   }
   .card-hover {
@@ -42,8 +42,8 @@
 
   /* ── Form elements ── */
   .input {
-    @apply w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900
-           placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-gray-100
+           placeholder-gray-400 dark:placeholder-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20
            focus:border-indigo-400 transition-all duration-150;
   }
   .label {
@@ -143,16 +143,26 @@
   animation: shimmer 1.5s infinite;
   @apply rounded-xl;
 }
+.dark .skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply bg-gray-200 rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-gray-300; }
+::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-gray-700 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-300 dark:bg-gray-600; }
 
 /* Mobile safe area */
 .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 8px); }
 .safe-top { padding-top: env(safe-area-inset-top); }
+
+/* Mobile-first: ensure inputs are at least 44px tall for touch targets */
+@media (max-width: 640px) {
+  .input { min-height: 44px; }
+  .btn-primary, .btn-secondary { min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+}
 
 /* Macro ring */
 .macro-ring {
@@ -160,6 +170,7 @@
   transform-origin: center;
 }
 .macro-ring-track { fill: none; stroke: #F1F5F9; }
+.dark .macro-ring-track { stroke: #374151; }
 .macro-ring-fill {
   fill: none;
   stroke-linecap: round;

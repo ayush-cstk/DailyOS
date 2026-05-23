@@ -61,9 +61,9 @@ function CalorieRing({ value, goal }: { value: number; goal: number }) {
         />
       </svg>
       <div className="text-center relative z-10">
-        <p className="text-2xl font-black text-gray-900 leading-none">{Math.round(remaining)}</p>
+        <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{Math.round(remaining)}</p>
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">remaining</p>
-        <p className="text-xs text-gray-500 mt-1">{Math.round(value)} / {goal}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{Math.round(value)} / {goal}</p>
       </div>
     </div>
   );
@@ -139,15 +139,17 @@ export default function DietPage() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Diet</h1>
-          <p className="text-sm text-gray-400 mt-0.5 font-medium">Fuel your performance</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Diet</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Fuel your performance</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowGoals(true)} className="btn-secondary text-sm flex items-center gap-1.5">
-            <Settings className="w-3.5 h-3.5" /> Goals
+            <Settings className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Goals</span>
           </button>
           <button onClick={() => setShowAddMeal(true)} className="btn-primary text-sm flex items-center gap-1.5">
-            <Plus className="w-4 h-4" /> Log meal
+            <Plus className="w-4 h-4" />
+            <span>Log meal</span>
           </button>
         </div>
       </div>
@@ -158,7 +160,7 @@ export default function DietPage() {
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="text-center">
-          <p className="font-bold text-gray-900 text-sm">{formatDate(date)}</p>
+          <p className="font-bold text-gray-900 dark:text-white text-sm">{formatDate(date)}</p>
           {isToday && (
             <span className="text-xs font-bold text-emerald-500">Today</span>
           )}
@@ -171,59 +173,59 @@ export default function DietPage() {
       {/* ── Macro Dashboard ── */}
       <div className="card mb-5">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-gray-900 text-sm">Daily Nutrition</h3>
-          <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+          <h3 className="font-bold text-gray-900 dark:text-white text-sm">Daily Nutrition</h3>
+          <span className="text-xs font-semibold text-gray-400 bg-gray-50 dark:bg-gray-700 px-2.5 py-1 rounded-full">
             {meals.length} meal{meals.length !== 1 ? "s" : ""} logged
           </span>
         </div>
 
-        {/* Calorie ring + macros */}
-        <div className="flex items-center gap-5">
+        {/* Calorie ring + macros — stacked on mobile, side-by-side on sm+ */}
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-5">
           <CalorieRing value={totals.calories} goal={goals.calories} />
 
-          <div className="flex-1 grid grid-cols-3 gap-3">
+          <div className="w-full grid grid-cols-3 gap-3 sm:flex-1">
             {/* Protein */}
             <div className="flex flex-col items-center gap-1.5">
               <div className="relative">
-                <MacroRing value={totals.proteinG} goal={goals.proteinG} color="#3B82F6" size={60} stroke={5} />
+                <MacroRing value={totals.proteinG} goal={goals.proteinG} color="#3B82F6" size={68} stroke={6} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-[10px] font-black text-blue-500">{Math.round((totals.proteinG / goals.proteinG) * 100)}%</span>
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-xs font-black text-gray-900">{Math.round(totals.proteinG)}g</p>
-                <p className="text-[10px] font-semibold text-gray-400">Protein</p>
-                <p className="text-[10px] text-gray-300">/ {goals.proteinG}g</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white">{Math.round(totals.proteinG)}g</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Protein</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">/ {goals.proteinG}g</p>
               </div>
             </div>
 
             {/* Carbs */}
             <div className="flex flex-col items-center gap-1.5">
               <div className="relative">
-                <MacroRing value={totals.carbsG} goal={goals.carbsG} color="#10B981" size={60} stroke={5} />
+                <MacroRing value={totals.carbsG} goal={goals.carbsG} color="#10B981" size={68} stroke={6} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-[10px] font-black text-emerald-500">{Math.round((totals.carbsG / goals.carbsG) * 100)}%</span>
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-xs font-black text-gray-900">{Math.round(totals.carbsG)}g</p>
-                <p className="text-[10px] font-semibold text-gray-400">Carbs</p>
-                <p className="text-[10px] text-gray-300">/ {goals.carbsG}g</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white">{Math.round(totals.carbsG)}g</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Carbs</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">/ {goals.carbsG}g</p>
               </div>
             </div>
 
             {/* Fat */}
             <div className="flex flex-col items-center gap-1.5">
               <div className="relative">
-                <MacroRing value={totals.fatG} goal={goals.fatG} color="#F43F5E" size={60} stroke={5} />
+                <MacroRing value={totals.fatG} goal={goals.fatG} color="#F43F5E" size={68} stroke={6} />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-[10px] font-black text-rose-500">{Math.round((totals.fatG / goals.fatG) * 100)}%</span>
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-xs font-black text-gray-900">{Math.round(totals.fatG)}g</p>
-                <p className="text-[10px] font-semibold text-gray-400">Fat</p>
-                <p className="text-[10px] text-gray-300">/ {goals.fatG}g</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white">{Math.round(totals.fatG)}g</p>
+                <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Fat</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">/ {goals.fatG}g</p>
               </div>
             </div>
           </div>
@@ -231,7 +233,7 @@ export default function DietPage() {
 
         {/* Calorie label row */}
         <div className="mt-4 flex items-center gap-3">
-          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{ width: `${Math.min((totals.calories / goals.calories) * 100, 100)}%`, backgroundColor: "#F59E0B" }}
@@ -248,12 +250,12 @@ export default function DietPage() {
         onClick={() => setShowScanner(true)}
         className="w-full mb-5 relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 p-px"
       >
-        <div className="bg-white rounded-[calc(1rem-1px)] px-4 py-3.5 flex items-center justify-center gap-2.5 hover:bg-emerald-50/60 transition-all">
+        <div className="bg-white dark:bg-gray-800 rounded-[calc(1rem-1px)] px-4 py-3.5 flex items-center justify-center gap-2.5 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all">
           <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div className="text-left">
-            <p className="text-sm font-bold text-gray-900">Scan meal with AI</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Scan meal with AI</p>
             <p className="text-xs text-gray-400">Take a photo — GPT-4o estimates macros</p>
           </div>
           <Camera className="w-4 h-4 text-emerald-500 ml-auto" />
@@ -263,7 +265,7 @@ export default function DietPage() {
       {/* ── Meals list ── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-700">
+          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
             Meals <span className="text-gray-400 font-semibold">({meals.length})</span>
           </h3>
         </div>
@@ -314,13 +316,13 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
   ];
 
   return (
-    <div className="card flex items-center gap-3 group hover:shadow-md hover:-translate-y-px transition-all duration-200 animate-slide-up"
+    <div className="card flex items-center gap-3 hover:shadow-md transition-all duration-200 animate-slide-up"
       style={{ borderLeftColor: "#10B981", borderLeftWidth: "3px" }}>
-      <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
+      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
         <Utensils className="w-4 h-4 text-emerald-500" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 text-sm truncate">{meal.name}</p>
+        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{meal.name}</p>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {macros.map(({ label, value, bg, text, dot }) => (
             <span key={label} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold", bg, text)}>
@@ -332,9 +334,9 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
       </div>
       <button
         onClick={onDelete}
-        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all flex-shrink-0"
+        className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 active:scale-90 transition-all flex-shrink-0"
       >
-        <Trash2 className="w-3.5 h-3.5" />
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );
@@ -345,9 +347,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up">
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5 animate-slide-up">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-gray-900">{title}</h3>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">{title}</h3>
           <button onClick={onClose} className="btn-ghost p-1.5"><X className="w-4 h-4" /></button>
         </div>
         {children}

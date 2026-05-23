@@ -57,14 +57,14 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
 
       {/* ── Nav ── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-gray-100" : "bg-transparent"}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg shadow-sm border-b border-gray-100 dark:border-gray-800" : "bg-transparent"}`}>
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Image src="/BrandLogo_Header.png" alt="DailyOS" width={32} height={32} className="rounded-xl" />
-            <span className="font-black text-gray-900 text-lg tracking-tight">DailyOS</span>
+            <span className="font-black text-gray-900 dark:text-white text-lg tracking-tight">DailyOS</span>
           </div>
           <div className="flex items-center gap-3">
             {session ? (
@@ -100,7 +100,7 @@ export default function LandingPage() {
             <Zap className="w-3.5 h-3.5" /> Your personal daily operating system
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-gray-900 leading-[1.06] tracking-tight mb-6 animate-slide-up">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-gray-900 dark:text-white leading-[1.06] tracking-tight mb-6 animate-slide-up">
             Tasks. Gym. Diet.
             <br />
             <span className="gradient-text">All in one place.</span>
@@ -125,7 +125,7 @@ export default function LandingPage() {
               Continue with Google
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
-            <a href="#features" className="inline-flex items-center justify-center gap-2 text-gray-600 font-semibold px-8 py-4 rounded-2xl text-base border border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:scale-[0.97] transition-all">
+            <a href="#features" className="inline-flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 font-semibold px-8 py-4 rounded-2xl text-base border border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.97] transition-all">
               See how it works <ChevronRight className="w-4 h-4" />
             </a>
           </div>
@@ -246,11 +246,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" className="py-24 px-5 bg-white">
+      <section id="features" className="py-24 px-5 bg-white dark:bg-gray-950">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Features</p>
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4 tracking-tight">
+            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
               Built for how you actually live
             </h2>
             <p className="text-lg text-gray-400 max-w-xl mx-auto">
@@ -263,8 +263,8 @@ export default function LandingPage() {
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200`}>
                   <f.icon className="w-5.5 h-5.5 text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2 text-base">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-base">{f.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -272,25 +272,25 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="py-24 px-5 bg-[#F7F8FC]">
+      <section className="py-24 px-5 bg-[#F7F8FC] dark:bg-gray-900">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Workflow</p>
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight">One app. Three modules. Your whole day.</h2>
+            <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">One app. Three modules. Your whole day.</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { step: "01", icon: CheckCircle2, color: "text-violet-600 bg-violet-100", title: "Plan your day", desc: "Add tasks under projects. Switch between daily and weekly views. Tap to complete." },
-              { step: "02", icon: Dumbbell, color: "text-blue-600 bg-blue-100", title: "Log your workout", desc: "Add exercises, sets, reps, weights. Save it. Hit AI Summary for a coach report." },
-              { step: "03", icon: Utensils, color: "text-emerald-600 bg-emerald-100", title: "Track your nutrition", desc: "Snap a meal photo or log manually. Watch your macros fill up throughout the day." },
+              { step: "01", icon: CheckCircle2, color: "text-violet-600 bg-violet-100 dark:bg-violet-900/40", title: "Plan your day", desc: "Add tasks under projects. Switch between daily and weekly views. Tap to complete." },
+              { step: "02", icon: Dumbbell, color: "text-blue-600 bg-blue-100 dark:bg-blue-900/40", title: "Log your workout", desc: "Add exercises, sets, reps, weights. Save it. Hit AI Summary for a coach report." },
+              { step: "03", icon: Utensils, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40", title: "Track your nutrition", desc: "Snap a meal photo or log manually. Watch your macros fill up throughout the day." },
             ].map((step) => (
               <div key={step.step} className="card text-center">
                 <div className={`w-12 h-12 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-4`}>
                   <step.icon className="w-5.5 h-5.5" />
                 </div>
                 <span className="text-xs font-black text-gray-300 tracking-widest">{step.step}</span>
-                <h3 className="font-bold text-gray-900 mt-1 mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mt-1 mb-2">{step.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -298,22 +298,22 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="py-24 px-5 bg-white">
+      <section className="py-24 px-5 bg-white dark:bg-gray-950">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <div className="flex items-center justify-center gap-1 mb-4">
               {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">People who actually use it</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">People who actually use it</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {testimonials.map((t) => (
               <div key={t.name} className="card-hover">
-                <p className="text-sm text-gray-600 leading-relaxed mb-5">"{t.text}"</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-5">&quot;{t.text}&quot;</p>
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full ${t.color} flex items-center justify-center text-white font-bold text-sm`}>{t.avatar}</div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900">{t.name}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</p>
                     <p className="text-xs text-gray-400">{t.role}</p>
                   </div>
                 </div>
