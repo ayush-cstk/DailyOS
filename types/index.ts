@@ -43,11 +43,26 @@ export interface ExerciseLog {
   notes?: string;
 }
 
+// ── Cardio ─────────────────────────────────────────────────────────────────────
+export type CardioActivity =
+  | "walking" | "running" | "cycling" | "hiking"
+  | "mountain_climbing" | "swimming" | "jump_rope"
+  | "elliptical" | "stair_climbing" | "rowing";
+
+export interface CardioLog {
+  id: string;
+  activity: CardioActivity;
+  durationMinutes: number;
+  distanceKm?: number;
+  caloriesBurned?: number; // MET-based auto-calculation
+}
+
 export interface WorkoutSession {
   id: string;
   userId: string;
   date: string; // ISO date string YYYY-MM-DD
   exercises: ExerciseLog[];
+  cardioLogs?: CardioLog[];
   durationMinutes: number;
   bodyWeightKg?: number;
   notes?: string;
@@ -76,6 +91,7 @@ export interface MealMacros {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  fiberG?: number;
 }
 
 export interface MealEntry {

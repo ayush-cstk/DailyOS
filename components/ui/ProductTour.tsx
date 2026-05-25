@@ -346,7 +346,7 @@ function Step3({ onNext, onBack, onDismiss }: { onNext: () => void; onBack: () =
 
       <div className="px-6 py-4">
         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-          Log meals manually or <span className="font-black text-emerald-600">snap a photo</span> — GPT-4o estimates every macro instantly.
+          Log meals manually or <span className="font-black text-emerald-600">snap a photo</span> — AI Model estimates every macro instantly.
         </p>
       </div>
 

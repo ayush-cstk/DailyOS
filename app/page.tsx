@@ -29,7 +29,7 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 const features = [
   { icon: CheckCircle2, gradient: "from-violet-500 to-purple-600", title: "Smart Task Management", desc: "Daily & weekly to-dos organized by project. One tap to complete. Zero friction." },
   { icon: Dumbbell, gradient: "from-blue-500 to-indigo-600", title: "Workout Logger", desc: "Log every set, rep, and weight. kg, lbs, or bodyweight. Built for real athletes." },
-  { icon: Camera, gradient: "from-pink-500 to-rose-600", title: "AI Meal Scanner", desc: "Snap a photo of your food. GPT-4o estimates all macros instantly." },
+  { icon: Camera, gradient: "from-pink-500 to-rose-600", title: "AI Meal Scanner", desc: "Snap a photo of your food. Our best AI model estimates all macros instantly." },
   { icon: Brain, gradient: "from-amber-500 to-orange-600", title: "AI Workout Analysis", desc: "Get a personalized coach report after every session — intensity, wins, improvements." },
   { icon: BarChart3, gradient: "from-emerald-500 to-teal-600", title: "Nutrition Tracking", desc: "Set macro goals. Log meals. Watch your daily calories, protein, carbs and fat." },
   { icon: TrendingUp, gradient: "from-cyan-500 to-blue-600", title: "Progress Over Time", desc: "Body weight trends, workout history, and nutrition patterns all in one place." },

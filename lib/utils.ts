@@ -10,8 +10,16 @@ export function formatDate(date: Date | string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Returns YYYY-MM-DD in the user's *local* timezone (not UTC). */
+export function localDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function todayString(): string {
-  return new Date().toISOString().split("T")[0];
+  return localDateString(new Date());
 }
 
 export function generateId(): string {

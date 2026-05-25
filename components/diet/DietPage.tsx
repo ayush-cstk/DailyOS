@@ -5,7 +5,7 @@ import {
   Plus, Utensils, Camera, Trash2, X, Loader2, Settings,
   Flame, ChevronLeft, ChevronRight, Sparkles, CheckCircle2
 } from "lucide-react";
-import { cn, todayString, formatDate } from "@/lib/utils";
+import { cn, todayString, formatDate, localDateString } from "@/lib/utils";
 import { getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals } from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
@@ -151,7 +151,7 @@ export default function DietPage() {
   const changeDate = (delta: number) => {
     const d = new Date(date);
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(localDateString(d));
   };
 
   const isToday = date === todayString();
@@ -279,7 +279,7 @@ export default function DietPage() {
           </div>
           <div className="text-left">
             <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>Scan meal with AI</p>
-            <p className="text-xs" style={{ color: "var(--text-3)" }}>Take a photo — GPT-4o estimates macros</p>
+            <p className="text-xs" style={{ color: "var(--text-3)" }}>Take a photo — AI Model estimates macros</p>
           </div>
           <Camera className="w-4 h-4 text-emerald-500 ml-auto" />
         </div>
@@ -332,10 +332,13 @@ export default function DietPage() {
 // ── MealCard ──────────────────────────────────────────────────────────────────
 function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void }) {
   const macros = [
-    { label: "kcal", value: Math.round(meal.macros.calories), bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-400" },
-    { label: "P", value: Math.round(meal.macros.proteinG) + "g", bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-400" },
-    { label: "C", value: Math.round(meal.macros.carbsG) + "g", bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-400" },
-    { label: "F", value: Math.round(meal.macros.fatG) + "g", bg: "bg-rose-100", text: "text-rose-700", dot: "bg-rose-400" },
+    { label: "kcal", value: Math.round(meal.macros.calories),  bg: "bg-amber-100 dark:bg-amber-500/10",   text: "text-amber-700 dark:text-amber-400",   dot: "bg-amber-400" },
+    { label: "P",    value: Math.round(meal.macros.proteinG) + "g", bg: "bg-blue-100 dark:bg-blue-500/10",  text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-400" },
+    { label: "C",    value: Math.round(meal.macros.carbsG) + "g",   bg: "bg-emerald-100 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-400" },
+    { label: "F",    value: Math.round(meal.macros.fatG) + "g",     bg: "bg-rose-100 dark:bg-rose-500/10",  text: "text-rose-700 dark:text-rose-400",   dot: "bg-rose-400" },
+    ...(meal.macros.fiberG != null && meal.macros.fiberG > 0
+      ? [{ label: "fiber", value: Math.round(meal.macros.fiberG) + "g", bg: "bg-violet-100 dark:bg-violet-500/10", text: "text-violet-700 dark:text-violet-400", dot: "bg-violet-400" }]
+      : []),
   ];
 
   return (
@@ -452,7 +455,7 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [editedName, setEditedName] = useState("");
-  const [editedMacros, setEditedMacros] = useState({ calories: "", protein: "", carbs: "", fat: "" });
+  const [editedMacros, setEditedMacros] = useState({ calories: "", protein: "", carbs: "", fat: "", fiber: "" });
   const [error, setError] = useState("");
 
   const handleFile = async (file: File) => {
@@ -481,6 +484,7 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
             protein: String(data.proteinG || ""),
             carbs: String(data.carbsG || ""),
             fat: String(data.fatG || ""),
+            fiber: String(data.fiberG || ""),
           });
         }
       } catch {
@@ -500,6 +504,7 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
         proteinG: Number(editedMacros.protein) || 0,
         carbsG: Number(editedMacros.carbs) || 0,
         fatG: Number(editedMacros.fat) || 0,
+        ...(editedMacros.fiber ? { fiberG: Number(editedMacros.fiber) } : {}),
       },
       createdAt: Date.now(),
     });
@@ -523,7 +528,7 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
               <Camera className="w-7 h-7 text-white" />
             </div>
             <p className="text-sm font-bold text-gray-700">Tap to upload a photo</p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC · GPT-4o will analyze</p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC · AI Model will analyze</p>
           </div>
           <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
@@ -580,6 +585,11 @@ function MealScannerModal({ userId, date, onSave, onClose }: {
                   <label className="label">Fat (g)</label>
                   <input type="number" className="input text-sm" value={editedMacros.fat}
                     onChange={(e) => setEditedMacros(m => ({ ...m, fat: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label">Fiber (g)</label>
+                  <input type="number" className="input text-sm" value={editedMacros.fiber} placeholder="0"
+                    onChange={(e) => setEditedMacros(m => ({ ...m, fiber: e.target.value }))} />
                 </div>
               </div>
               <div className="flex gap-2">

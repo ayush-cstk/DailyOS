@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, CalendarClock, History,
   Edit2, Flag, CalendarCheck,
 } from "lucide-react";
-import { cn, PROJECT_COLORS, todayString } from "@/lib/utils";
+import { cn, PROJECT_COLORS, todayString, localDateString } from "@/lib/utils";
 import { getTasks, createTask, updateTask, deleteTask, getProjects, createProject } from "@/lib/firestore";
 import { useToast } from "@/components/ui/Toast";
 import type { Task, Project, TaskPriority } from "@/types";
@@ -31,7 +31,7 @@ function getWeekDates(anchor: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(monday);
     dd.setDate(monday.getDate() + i);
-    return dd.toISOString().split("T")[0];
+    return localDateString(dd);
   });
 }
 
@@ -53,9 +53,9 @@ function formatDateLabel(dateStr: string): string {
   const d = new Date();
   const tomorrow  = new Date(d); tomorrow.setDate(d.getDate() + 1);
   const yesterday = new Date(d); yesterday.setDate(d.getDate() - 1);
-  if (dateStr === today)                            return "Today";
-  if (dateStr === tomorrow.toISOString().split("T")[0])  return "Tomorrow";
-  if (dateStr === yesterday.toISOString().split("T")[0]) return "Yesterday";
+  if (dateStr === today)                     return "Today";
+  if (dateStr === localDateString(tomorrow))  return "Tomorrow";
+  if (dateStr === localDateString(yesterday)) return "Yesterday";
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
     weekday: "long", month: "short", day: "numeric",
   });
@@ -66,7 +66,7 @@ function formatGroupDate(dateStr: string): string {
   const d = new Date();
   const yesterday = new Date(d); yesterday.setDate(d.getDate() - 1);
   if (dateStr === today) return "Today";
-  if (dateStr === yesterday.toISOString().split("T")[0]) return "Yesterday";
+  if (dateStr === localDateString(yesterday)) return "Yesterday";
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
     weekday: "short", month: "short", day: "numeric", year: "numeric",
   });
@@ -88,7 +88,7 @@ function groupByCompletionDate(tasks: Task[]): [string, Task[]][] {
   const map: Record<string, Task[]> = {};
   tasks.forEach(t => {
     if (!t.completedAt) return;
-    const date = new Date(t.completedAt).toISOString().split("T")[0];
+    const date = localDateString(new Date(t.completedAt));
     if (!map[date]) map[date] = [];
     map[date].push(t);
   });
@@ -147,7 +147,7 @@ export default function TaskBoard() {
   const completedForDate = tasks.filter(t => {
     if (t.status !== "completed") return false;
     if (t.dueDate) return t.dueDate === selectedDate;
-    if (t.completedAt) return new Date(t.completedAt).toISOString().split("T")[0] === selectedDate;
+    if (t.completedAt) return localDateString(new Date(t.completedAt)) === selectedDate;
     return false;
   });
 
@@ -166,7 +166,7 @@ export default function TaskBoard() {
     doneByDate[d] = tasks.filter(t => {
       if (t.status !== "completed") return false;
       if (t.dueDate) return t.dueDate === d;
-      if (t.completedAt) return new Date(t.completedAt).toISOString().split("T")[0] === d;
+      if (t.completedAt) return localDateString(new Date(t.completedAt)) === d;
       return false;
     }).length;
   });
@@ -235,7 +235,7 @@ export default function TaskBoard() {
   const navigateWeek = (dir: -1 | 1) => {
     const anchor = new Date(weekAnchor + "T00:00:00");
     anchor.setDate(anchor.getDate() + dir * 7);
-    const newAnchor = anchor.toISOString().split("T")[0];
+    const newAnchor = localDateString(anchor);
     setWeekAnchor(newAnchor);
     const newWeek = getWeekDates(newAnchor);
     if (!newWeek.includes(selectedDate)) setSelectedDate(newWeek[0]);

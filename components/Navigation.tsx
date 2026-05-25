@@ -7,6 +7,7 @@ import Image from "next/image";
 import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import NotificationBell from "@/components/ui/NotificationBell";
 
 const navItems = [
   {
@@ -102,7 +103,8 @@ export default function Navigation() {
         <div className="flex items-center gap-2.5 px-5 py-5" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <Image src={logoSrc} alt="DailyOS" width={32} height={32} className="rounded-xl" />
           <span className="font-black text-lg tracking-tight" style={{ color: "var(--text-1)" }}>DailyOS</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
             <ThemeToggle />
           </div>
         </div>
@@ -178,6 +180,7 @@ export default function Navigation() {
           })}
         </div>
         <div className="ml-auto flex items-center gap-1">
+          <NotificationBell />
           <ThemeToggle iconSize="w-3.5 h-3.5" />
           {session?.user && (
             <div ref={profileRef} className="relative">

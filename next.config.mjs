@@ -4,7 +4,7 @@ const nextConfig = {
     domains: ["lh3.googleusercontent.com", "firebasestorage.googleapis.com"],
   },
   experimental: {
-    serverComponentsExternalPackages: ["firebase-admin"],
+    serverComponentsExternalPackages: ["firebase-admin", "web-push"],
   },
 };
 
