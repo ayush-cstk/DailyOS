@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import HomeView from "@/components/dashboard/HomeView";
 
 export default function DashboardRoot() {
-  redirect("/dashboard/tasks");
+  return <HomeView />;
 }

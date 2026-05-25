@@ -4,12 +4,23 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown } from "lucide-react";
+import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/ui/NotificationBell";
 
 const navItems = [
+  {
+    href: "/dashboard",         icon: LayoutDashboard, label: "Home", exact: true,
+    activeBg: "bg-orange-50 dark:bg-transparent",
+    activeText: "text-orange-700 dark:text-white",
+    activeBorder: "dark:border-l-orange-500",
+    activeGlow: "dark:shadow-[0_0_12px_rgba(249,115,22,0.2)]",
+    iconActive: "text-orange-600 dark:text-orange-400",
+    dot: "bg-orange-500",
+    mobileActiveBg: "bg-orange-50 dark:bg-orange-500/10",
+    mobileActiveText: "text-orange-700 dark:text-orange-300",
+  },
   {
     href: "/dashboard/tasks",   icon: CheckSquare, label: "Tasks",
     activeBg: "bg-violet-50 dark:bg-transparent",
@@ -112,8 +123,8 @@ export default function Navigation() {
         {/* Nav links */}
         <nav className="flex-1 p-3 space-y-0.5">
           <p className="text-[10px] font-bold uppercase tracking-widest px-2 mb-3 mt-1" style={{ color: "var(--text-3)" }}>Menu</p>
-          {navItems.map(({ href, icon: Icon, label, activeBg, activeText, activeBorder, activeGlow, iconActive, dot }) => {
-            const active = pathname.startsWith(href);
+          {navItems.map(({ href, icon: Icon, label, activeBg, activeText, activeBorder, activeGlow, iconActive, dot, exact }) => {
+            const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link key={href} href={href}
                 className={cn(
@@ -174,8 +185,9 @@ export default function Navigation() {
         </div>
         {/* Active section label */}
         <div className="ml-3">
-          {navItems.map(({ href, label, mobileActiveBg, mobileActiveText }) => {
-            if (!pathname.startsWith(href)) return null;
+          {navItems.map(({ href, label, mobileActiveBg, mobileActiveText, exact }) => {
+            const active = exact ? pathname === href : pathname.startsWith(href);
+            if (!active) return null;
             return <span key={href} className={cn("text-xs font-bold px-2 py-1 rounded-lg", mobileActiveBg, mobileActiveText)}>{label}</span>;
           })}
         </div>
@@ -230,8 +242,8 @@ export default function Navigation() {
       {/* ── Mobile bottom nav ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 safe-bottom bg-white/95 dark:bg-black/90 backdrop-blur-2xl border-t border-gray-100 dark:border-white/[0.06]">
         <div className="flex items-stretch h-16">
-          {navItems.map(({ href, icon: Icon, label, mobileActiveBg, mobileActiveText, dot }) => {
-            const active = pathname.startsWith(href);
+          {navItems.map(({ href, icon: Icon, label, mobileActiveBg, mobileActiveText, dot, exact }) => {
+            const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link key={href} href={href}
                 className={cn("flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-150 relative active:scale-95")}>

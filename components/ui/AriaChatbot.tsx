@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, Dumbbell, Utensils, CheckSquare, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownText } from "@/components/ui/MarkdownText";
-import { getDietContext } from "@/lib/orbitContext";
+import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
 
 type Mode = "workout" | "diet" | "tasks" | null;
 type Message = { role: "user" | "assistant"; content: string };
@@ -94,11 +94,13 @@ export default function AriaChatbot() {
     setLoading(true);
 
     try {
-      const dietContext = mode === "diet" ? getDietContext() : null;
+      const dietContext    = getDietContext();
+      const workoutContext = getWorkoutContext();
+      const taskContext    = getTaskContext();
       const res = await fetch("/api/aria", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, mode, dietContext }),
+        body: JSON.stringify({ messages: next, mode, dietContext, workoutContext, taskContext }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, {

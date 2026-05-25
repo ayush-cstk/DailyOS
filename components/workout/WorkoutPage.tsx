@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn, generateId, todayString, formatDate, localDateString } from "@/lib/utils";
 import { saveWorkoutSession, getWorkoutSessions, getBodyWeightEntries, logBodyWeight } from "@/lib/firestore";
+import { setWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import type { WorkoutSession, ExerciseLog, SetLog, WeightUnit, BodyWeightEntry, CardioLog, CardioActivity } from "@/types";
@@ -68,10 +69,40 @@ export default function WorkoutPage() {
 
   useEffect(() => {
     if (!userId) return;
-    getWorkoutSessions(userId).then(setPastSessions);
+    getWorkoutSessions(userId).then((sessions) => {
+      setPastSessions(sessions);
+      // Write to Orbit context so chatbot knows workout history
+      setWorkoutContext({
+        bodyWeightKg: bodyWeightEntries[0]?.weightKg,
+        recentSessions: sessions.slice(0, 5).map((s) => ({
+          date: s.date,
+          durationMinutes: s.durationMinutes,
+          exercises: s.exercises.map((ex) => ({
+            name: ex.name,
+            sets: ex.sets.length,
+            topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
+            unit: ex.sets[0]?.unit,
+          })),
+          cardio: s.cardioLogs?.map((c) => ({
+            activity: c.activity,
+            durationMinutes: c.durationMinutes,
+            distanceKm: c.distanceKm,
+            caloriesBurned: c.caloriesBurned,
+          })),
+          summary: s.summary,
+        })),
+      });
+    });
     getBodyWeightEntries(userId).then((entries) => {
       setBodyWeightEntries(entries);
-      if (entries.length > 0) setBodyWeight(String(entries[0].weightKg));
+      if (entries.length > 0) {
+        setBodyWeight(String(entries[0].weightKg));
+        // Update context with body weight
+        setWorkoutContext({
+          bodyWeightKg: entries[0].weightKg,
+          recentSessions: [],
+        });
+      }
     });
   }, [userId]);
 

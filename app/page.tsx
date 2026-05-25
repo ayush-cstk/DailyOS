@@ -10,6 +10,246 @@ import {
   Activity, Shield, Clock, Users
 } from "lucide-react";
 
+// ── Dark app preview (hero mockup) ───────────────────────────────────────────
+function DarkCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{
+      background: "#141414", border: "1px solid rgba(255,255,255,0.07)",
+      borderRadius: "14px", padding: "14px", ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function DarkAppPreview() {
+  // Calorie ring
+  const consumed = 1840, calorieGoal = 2200;
+  const R = 30, CIRC = 2 * Math.PI * R;
+  const ringPct = consumed / calorieGoal;
+
+  // Weight sparkline (fake descending data)
+  const wts     = [80.2, 79.8, 79.9, 79.5, 79.3, 78.8, 78.5];
+  const wLo     = Math.min(...wts) - 0.3;
+  const wHi     = Math.max(...wts) + 0.3;
+  const SW = 150, SH = 30;
+  const sparkPts = wts.map((w, i) => {
+    const x = (i / (wts.length - 1)) * SW;
+    const y = SH - ((w - wLo) / (wHi - wLo)) * (SH - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const sparkArea = `0,${SH} ${sparkPts} ${SW},${SH}`;
+
+  // Workout frequency (5/7 days trained, height = duration ratio)
+  const wkDays  = [60, 0, 75, 45, 90, 0, 55];
+  const wkLabels = ["S","M","T","W","T","F","S"];
+  const wkMax   = 90;
+
+  const cardHeader = (bg: string, label: string, link: string, linkColor: string, extra?: React.ReactNode) => (
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"7px" }}>
+        <div style={{ width:"24px", height:"24px", background: bg, borderRadius:"7px" }} />
+        <span style={{ fontWeight:700, color:"#e8e8e8", fontSize:"11px" }}>{label}</span>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+        {extra}
+        <span style={{ fontSize:"9px", fontWeight:700, color: linkColor }}>{link} ↗</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ background:"#0a0a0a", borderRadius:"20px", padding:"16px",
+      fontFamily:"system-ui,-apple-system,sans-serif", fontSize:"12px" }}>
+
+      {/* Browser chrome */}
+      <div style={{ display:"flex", alignItems:"center", gap:"5px", marginBottom:"14px" }}>
+        {["#ff5f57","#febc2e","#28c840"].map(c => (
+          <div key={c} style={{ width:"9px", height:"9px", borderRadius:"50%", background:c }} />
+        ))}
+        <div style={{ flex:1, marginLeft:"6px", background:"#1a1a1a", borderRadius:"5px",
+          height:"20px", display:"flex", alignItems:"center", paddingLeft:"10px",
+          border:"1px solid rgba(255,255,255,0.05)" }}>
+          <span style={{ color:"#444", fontSize:"10px" }}>dailyos.app/dashboard</span>
+        </div>
+      </div>
+
+      {/* Greeting + streak chips */}
+      <div style={{ marginBottom:"14px" }}>
+        <div style={{ fontSize:"17px", fontWeight:900, color:"#fff", letterSpacing:"-0.4px" }}>
+          Good morning, Ayush
+        </div>
+        <div style={{ fontSize:"10px", color:"#555", marginTop:"2px" }}>Monday, 26 May 2026</div>
+        <div style={{ display:"flex", gap:"6px", marginTop:"8px", flexWrap:"wrap" }}>
+          {[
+            { label:"7-day workout streak", bg:"rgba(59,130,246,0.12)", color:"#60a5fa", border:"rgba(59,130,246,0.2)" },
+            { label:"5-day task streak",    bg:"rgba(139,92,246,0.12)", color:"#a78bfa", border:"rgba(139,92,246,0.2)" },
+          ].map(chip => (
+            <span key={chip.label} style={{ fontSize:"10px", fontWeight:700, padding:"3px 9px",
+              borderRadius:"20px", background:chip.bg, color:chip.color,
+              border:`1px solid ${chip.border}` }}>
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 1: Nutrition (2/3) + Weight (1/3) */}
+      <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:"10px", marginBottom:"10px" }}>
+
+        {/* Nutrition card */}
+        <DarkCard>
+          {cardHeader("rgba(16,185,129,0.15)", "Today's Nutrition", "Open", "#10b981")}
+          <div style={{ display:"flex", alignItems:"center", gap:"14px" }}>
+            {/* Ring */}
+            <div style={{ position:"relative", flexShrink:0, width:"72px", height:"72px" }}>
+              <svg viewBox="0 0 72 72" style={{ width:"72px", height:"72px", transform:"rotate(-90deg)" }}>
+                <circle cx="36" cy="36" r={R} fill="none" strokeWidth="5.5" stroke="#2a2a2a" />
+                <circle cx="36" cy="36" r={R} fill="none" strokeWidth="5.5" stroke="#10b981"
+                  strokeLinecap="round"
+                  strokeDasharray={`${ringPct * CIRC} ${CIRC}`} />
+              </svg>
+              <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column",
+                alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+                <span style={{ fontSize:"13px", fontWeight:900, color:"#fff" }}>{consumed}</span>
+                <span style={{ fontSize:"8px", color:"#555", marginTop:"2px" }}>/ {calorieGoal}</span>
+              </div>
+            </div>
+            {/* Macro bars */}
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:"9px", fontWeight:700, color:"#10b981",
+                background:"rgba(16,185,129,0.1)", padding:"3px 7px", borderRadius:"20px",
+                display:"inline-block", marginBottom:"7px" }}>
+                360 kcal remaining
+              </div>
+              {[
+                { label:"Protein", val:142, goal:180, pct:79,  color:"#6366f1" },
+                { label:"Carbs",   val:210, goal:250, pct:84,  color:"#f59e0b" },
+                { label:"Fat",     val:58,  goal:65,  pct:89,  color:"#ec4899" },
+              ].map(m => (
+                <div key={m.label} style={{ marginBottom:"5px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"2px" }}>
+                    <span style={{ fontSize:"9px", fontWeight:600, color:"#888" }}>{m.label}</span>
+                    <span style={{ fontSize:"9px", color:"#555" }}>{m.val}/{m.goal}g</span>
+                  </div>
+                  <div style={{ height:"4px", background:"#2a2a2a", borderRadius:"4px" }}>
+                    <div style={{ height:"100%", width:`${m.pct}%`, background:m.color, borderRadius:"4px" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DarkCard>
+
+        {/* Weight card */}
+        <DarkCard>
+          {cardHeader("rgba(99,102,241,0.15)", "Body Weight", "Log", "#818cf8")}
+          <div style={{ fontSize:"28px", fontWeight:900, color:"#fff", letterSpacing:"-1px", lineHeight:1 }}>
+            78.5<span style={{ fontSize:"12px", color:"#555", fontWeight:600 }}> kg</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:"5px", marginTop:"4px" }}>
+            <span style={{ fontSize:"10px", fontWeight:700, color:"#10b981" }}>↓ −0.3 kg</span>
+            <span style={{ fontSize:"10px", color:"#555" }}>Yesterday</span>
+          </div>
+          <svg viewBox={`0 0 ${SW} ${SH}`} style={{ width:"100%", height:`${SH}px`, marginTop:"8px" }}>
+            <defs>
+              <linearGradient id="previewSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor="#818cf8" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#818cf8" stopOpacity="0"    />
+              </linearGradient>
+            </defs>
+            <polygon points={sparkArea} fill="url(#previewSparkGrad)" />
+            <polyline points={sparkPts} fill="none" stroke="#818cf8"
+              strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+          </svg>
+        </DarkCard>
+      </div>
+
+      {/* Row 2: Tasks + Workout */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+
+        {/* Tasks card */}
+        <DarkCard>
+          {cardHeader("rgba(139,92,246,0.15)", "Today's Tasks", "Open", "#a78bfa")}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:"5px" }}>
+            <div>
+              <span style={{ fontSize:"22px", fontWeight:900, color:"#fff" }}>3</span>
+              <span style={{ fontSize:"10px", color:"#555", marginLeft:"4px" }}>/ 6 done</span>
+            </div>
+            <span style={{ fontSize:"10px", fontWeight:700, color:"#8b5cf6" }}>50%</span>
+          </div>
+          <div style={{ height:"4px", background:"#2a2a2a", borderRadius:"4px", marginBottom:"8px" }}>
+            <div style={{ height:"100%", width:"50%", background:"#8b5cf6", borderRadius:"4px" }} />
+          </div>
+          {[
+            { title:"Review PRD document", p:"high",   pc:"#ef4444", pb:"rgba(239,68,68,0.1)"   },
+            { title:"Ship v2 feature",     p:"high",   pc:"#ef4444", pb:"rgba(239,68,68,0.1)"   },
+            { title:"Update docs",         p:"medium", pc:"#f59e0b", pb:"rgba(245,158,11,0.1)"  },
+          ].map((task, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:"7px",
+              padding:"4px 7px", background:"#1e1e1e", borderRadius:"7px", marginBottom:"3px" }}>
+              <div style={{ width:"9px", height:"9px", borderRadius:"50%",
+                border:"1.5px solid #444", flexShrink:0 }} />
+              <span style={{ flex:1, fontSize:"9px", color:"#999",
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {task.title}
+              </span>
+              <span style={{ fontSize:"8px", fontWeight:700, padding:"1px 5px",
+                borderRadius:"4px", background:task.pb, color:task.pc,
+                textTransform:"uppercase", flexShrink:0 }}>{task.p}</span>
+            </div>
+          ))}
+        </DarkCard>
+
+        {/* Workout card */}
+        <DarkCard>
+          {cardHeader("rgba(59,130,246,0.15)", "Workout", "View", "#60a5fa",
+            <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 6px",
+              borderRadius:"20px", background:"rgba(59,130,246,0.1)", color:"#60a5fa" }}>
+              7d
+            </span>
+          )}
+          <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"7px" }}>
+            <span style={{ fontSize:"9px", fontWeight:700, padding:"2px 7px",
+              borderRadius:"20px", background:"rgba(59,130,246,0.1)", color:"#60a5fa" }}>
+              Trained today
+            </span>
+            <span style={{ fontSize:"9px", color:"#555" }}>55 min</span>
+          </div>
+          {["Bench Press · 4 sets","Pull-ups · 3 sets","Squat · 4 sets"].map((ex, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:"7px",
+              padding:"4px 7px", background:"#1e1e1e", borderRadius:"7px", marginBottom:"3px" }}>
+              <div style={{ width:"5px", height:"5px", borderRadius:"50%",
+                background:"#3b82f6", flexShrink:0 }} />
+              <span style={{ fontSize:"9px", color:"#999" }}>{ex}</span>
+            </div>
+          ))}
+          {/* Frequency bars */}
+          <div style={{ marginTop:"8px", paddingTop:"8px",
+            borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+            <span style={{ fontSize:"8px", fontWeight:600, color:"#444",
+              textTransform:"uppercase", letterSpacing:"0.05em" }}>Last 7 days</span>
+            <svg viewBox="0 0 119 38" style={{ width:"100%", height:"38px", marginTop:"3px" }}>
+              {wkDays.map((dur, i) => {
+                const bH = dur > 0 ? Math.max(6, (dur / wkMax) * 24) : 3;
+                const x  = i * 17;
+                return (
+                  <g key={i}>
+                    <rect x={x} y={24-bH} width={12} height={bH} rx="2.5"
+                      fill={dur > 0 ? "#3b82f6" : "#232323"} />
+                    <text x={x+6} y={36} textAnchor="middle"
+                      style={{ fontSize:"7px", fill:"#444" }}>{wkLabels[i]}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </DarkCard>
+      </div>
+    </div>
+  );
+}
+
 // ── Animated counter ─────────────────────────────────────────────────────────
 function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
   const [val, setVal] = useState(0);
@@ -142,98 +382,10 @@ export default function LandingPage() {
         </div>
 
         {/* ── App Preview ── */}
-        <div className="max-w-5xl mx-auto mt-20 animate-slide-up" style={{animationDelay:"200ms"}}>
-          <div className="relative rounded-3xl overflow-hidden border border-gray-200 dark:border-white/[0.06] shadow-2xl shadow-gray-900/10 dark:shadow-black/50 bg-[#F7F8FC] dark:bg-[#0a0a0a] p-5">
-            {/* Fake browser bar */}
-            <div className="flex items-center gap-2 mb-5">
-              <div className="w-3 h-3 rounded-full bg-red-400" />
-              <div className="w-3 h-3 rounded-full bg-amber-400" />
-              <div className="w-3 h-3 rounded-full bg-emerald-400" />
-              <div className="flex-1 mx-4 bg-white dark:bg-[#111] rounded-lg h-7 flex items-center px-3 border border-transparent dark:border-white/[0.06]">
-                <span className="text-xs text-gray-400">dailyos.app/dashboard</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Tasks preview */}
-              <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-violet-600" />
-                  </div>
-                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Today</span>
-                  <span className="ml-auto text-xs bg-violet-100 text-violet-600 font-bold px-2 py-0.5 rounded-full">2/4</span>
-                </div>
-                {[
-                  { t: "Review PRD document", done: true },
-                  { t: "Team standup call", done: true },
-                  { t: "Ship v2 feature", done: false },
-                  { t: "Update documentation", done: false },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2.5 py-1.5 border-b border-gray-50 last:border-0">
-                    <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${item.done ? "bg-violet-500 border-violet-500" : "border-gray-300"}`}>
-                      {item.done && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
-                    </div>
-                    <span className={`text-xs ${item.done ? "line-through text-gray-300" : "text-gray-700"}`}>{item.t}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Workout preview */}
-              <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Dumbbell className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Workout</span>
-                  <span className="ml-auto text-xs text-gray-400">58 min</span>
-                </div>
-                {[
-                  { name: "Bench Press", sets: "4×8", weight: "80kg" },
-                  { name: "Pull-ups", sets: "3×10", weight: "BW" },
-                  { name: "Squat", sets: "4×6", weight: "100kg" },
-                ].map((ex, i) => (
-                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                    <span className="text-xs font-semibold text-gray-700">{ex.name}</span>
-                    <div className="flex gap-1">
-                      <span className="text-xs bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-md">{ex.sets}</span>
-                      <span className="text-xs bg-gray-100 text-gray-500 font-medium px-1.5 py-0.5 rounded-md">{ex.weight}</span>
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-2 text-center border border-indigo-100">
-                  <span className="text-xs font-bold text-indigo-600 flex items-center justify-center gap-1">
-                    <Sparkles className="w-3 h-3" /> AI Summary Ready
-                  </span>
-                </div>
-              </div>
-
-              {/* Diet preview */}
-              <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <Utensils className="w-3.5 h-3.5 text-emerald-600" />
-                  </div>
-                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Nutrition</span>
-                  <span className="ml-auto text-xs font-bold text-emerald-600">1,840 kcal</span>
-                </div>
-                {[
-                  { label: "Protein", val: 142, goal: 180, color: "bg-blue-400", pct: 79 },
-                  { label: "Carbs", val: 210, goal: 250, color: "bg-amber-400", pct: 84 },
-                  { label: "Fat", val: 58, goal: 65, color: "bg-rose-400", pct: 89 },
-                ].map((m) => (
-                  <div key={m.label} className="mb-2.5">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-500 font-medium">{m.label}</span>
-                      <span className="font-bold text-gray-700">{m.val}g <span className="text-gray-300 font-normal">/ {m.goal}g</span></span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${m.color} rounded-full transition-all`} style={{width:`${m.pct}%`}} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="max-w-4xl mx-auto mt-20 animate-slide-up" style={{animationDelay:"200ms"}}>
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-black/60"
+            style={{ border:"1px solid rgba(255,255,255,0.07)" }}>
+            <DarkAppPreview />
           </div>
         </div>
       </section>

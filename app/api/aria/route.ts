@@ -5,66 +5,153 @@ import { authOptions } from "@/lib/auth";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const BASE_SYSTEM = `You are Orbit — the AI life coach built into DailyOS, a personal operating system for tasks, workouts, and nutrition.
-
-You help users with:
-- 🏋️ Workout programming, exercise form, progressive overload, recovery
-- 🥗 Nutrition, macro tracking, meal planning, Indian food macros
-- ✅ Productivity, task prioritization, daily habits, focus
-- 📊 Connecting the dots between fitness, diet, and productivity
-
-Personality: encouraging, knowledgeable, concise, and practical. You give specific actionable advice, not vague tips.
-Format: use **bold** for key points and - for bullet lists. Keep responses under 180 words unless asked for more.
-You are aware of Indian cuisine and lifestyle contexts.`;
-
-const MODE_CONTEXT: Record<string, string> = {
-  workout: `\n\nThe user is asking about WORKOUTS. Focus on: exercise selection, sets/reps/weight progression, muscle groups, recovery, workout splits, form cues, and how training connects to their goals. Reference common gym exercises and real programming principles.`,
-  diet: `\n\nThe user is asking about DIET & NUTRITION. Focus on: macro targets, meal timing, specific food recommendations (especially Indian foods), calorie calculations, protein sources, and how nutrition supports their fitness goals. Give practical meal suggestions.`,
-  tasks: `\n\nThe user is asking about TASKS & PRODUCTIVITY. Focus on: prioritization frameworks, habit building, time blocking, reducing overwhelm, breaking goals into daily actions, and maintaining consistency. Give tactical, immediately actionable advice.`,
-};
-
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { messages, mode, dietContext } = await req.json();
+  const userName = session.user?.name?.split(" ")[0] ?? "there";
+  const { messages, mode, dietContext, workoutContext, taskContext } = await req.json();
 
-  let systemPrompt = BASE_SYSTEM + (mode && MODE_CONTEXT[mode] ? MODE_CONTEXT[mode] : "");
+  // ── Real date + time (IST) ─────────────────────────────────────────────────
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata",
+  });
+  const timeStr = now.toLocaleTimeString("en-IN", {
+    hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
+  });
 
-  // Inject today's real meal data when available in diet mode
-  if (mode === "diet" && dietContext) {
-    const { date, meals, totals, goals } = dietContext;
-    const mealLines = meals.length > 0
-      ? meals.map((m: any) => `  - ${m.name}: ${m.calories} kcal | ${m.proteinG}g P | ${m.carbsG}g C | ${m.fatG}g F`).join("\n")
-      : "  (no meals logged yet)";
+  // ── Base system prompt ──────────────────────────────────────────────────────
+  let system = `You are Orbit — the personal AI life coach built into DailyOS.
+You are talking to ${userName}.
+TODAY is ${dateStr}, ${timeStr} IST. Always use this when answering date/time questions.
 
-    systemPrompt += `
+You are deeply knowledgeable about:
+- 🏋️ Strength training, progressive overload, exercise science, injury prevention
+- 🥗 Nutrition, Indian cuisine macros, macro tracking, meal planning, weight management
+- ✅ Productivity, habits, task prioritization, time management, focus
+- 📊 How fitness, nutrition, and productivity interconnect
 
-=== USER'S ACTUAL DATA FOR ${date} ===
-Meals logged today:
+Personality: You are direct, specific, encouraging, and practical — like a coach who actually knows the user's data.
+Never give vague generic advice. Always reference the user's REAL data when available.
+Format: use **bold** for key points and - for bullet lists. Keep responses under 200 words unless the user asks for more detail.
+You are deeply familiar with Indian food, Indian lifestyle, Indian portion sizes, and Indian fitness culture.
+NEVER say you don't know today's date — you always know it.`;
+
+  // ── Mode-specific context ──────────────────────────────────────────────────
+  if (mode === "workout") {
+    system += `\n\n[MODE: WORKOUT COACH]
+Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
+
+    if (workoutContext) {
+      const { bodyWeightKg, recentSessions } = workoutContext;
+      if (bodyWeightKg) {
+        system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===
+Body weight: ${bodyWeightKg} kg`;
+      }
+      if (recentSessions?.length > 0) {
+        system += `\n\n=== RECENT WORKOUT HISTORY (last ${recentSessions.length} sessions) ===`;
+        recentSessions.slice(0, 5).forEach((s: any, i: number) => {
+          system += `\n\n[Session ${i + 1} — ${s.date}] ${s.durationMinutes > 0 ? `${s.durationMinutes} min` : ""}`;
+          if (s.exercises?.length > 0) {
+            system += `\nStrength: ` + s.exercises.map((e: any) =>
+              `${e.name} (${e.sets} sets${e.topWeight ? `, up to ${e.topWeight}${e.unit ?? "kg"}` : ""})`
+            ).join(", ");
+          }
+          if (s.cardio?.length > 0) {
+            system += `\nCardio: ` + s.cardio.map((c: any) =>
+              `${c.activity} ${c.durationMinutes}min${c.distanceKm ? ` / ${c.distanceKm}km` : ""}${c.caloriesBurned ? ` / ${c.caloriesBurned}kcal` : ""}`
+            ).join(", ");
+          }
+          if (s.summary) system += `\nCoach note: ${s.summary.slice(0, 120)}...`;
+        });
+        system += `\n\nUse this data to give specific advice — reference their actual exercises, weights, and patterns.`;
+      } else {
+        system += `\n\n[No workout history yet — give general programming advice and encourage them to start logging.]`;
+      }
+    }
+  }
+
+  else if (mode === "diet") {
+    system += `\n\n[MODE: NUTRITION COACH]
+Focus on macros, Indian meal recommendations, calorie targets, protein sources, and meal timing.`;
+
+    if (dietContext) {
+      const { date, meals, totals, goals } = dietContext;
+      const remaining = {
+        calories: Math.max(0, goals.calories - totals.calories),
+        proteinG: Math.max(0, goals.proteinG - totals.proteinG),
+        carbsG:   Math.max(0, goals.carbsG   - totals.carbsG),
+        fatG:     Math.max(0, goals.fatG     - totals.fatG),
+      };
+      const mealLines = meals.length > 0
+        ? meals.map((m: any) => `  • ${m.name}: ${m.calories} kcal | ${m.proteinG}g P | ${m.carbsG}g C | ${m.fatG}g F${m.fiberG ? ` | ${m.fiberG}g fiber` : ""}`).join("\n")
+        : "  (nothing logged yet today)";
+
+      system += `\n\n=== ${userName.toUpperCase()}'S NUTRITION — ${date} ===
+Meals logged:
 ${mealLines}
 
-Totals so far: ${totals.calories} kcal | ${totals.proteinG}g protein | ${totals.carbsG}g carbs | ${totals.fatG}g fat
-Daily goals:   ${goals.calories} kcal | ${goals.proteinG}g protein | ${goals.carbsG}g carbs | ${goals.fatG}g fat
-Remaining:     ${Math.max(0, goals.calories - totals.calories)} kcal | ${Math.max(0, goals.proteinG - totals.proteinG)}g protein | ${Math.max(0, goals.carbsG - totals.carbsG)}g carbs | ${Math.max(0, goals.fatG - totals.fatG)}g fat
+Totals:    ${totals.calories} kcal | ${totals.proteinG}g P | ${totals.carbsG}g C | ${totals.fatG}g F
+Goals:     ${goals.calories} kcal | ${goals.proteinG}g P | ${goals.carbsG}g C | ${goals.fatG}g F
+Remaining: ${remaining.calories} kcal | ${remaining.proteinG}g P | ${remaining.carbsG}g C | ${remaining.fatG}g F
 
-Use this REAL data to answer questions about what the user has eaten, what they should eat next, and how to hit their remaining macros. Be specific and reference the actual meals listed.`
+Progress: ${Math.round((totals.calories / goals.calories) * 100)}% of calorie goal, ${Math.round((totals.proteinG / goals.proteinG) * 100)}% of protein goal.
+
+Always reference these exact numbers when answering diet questions. Give specific Indian meal suggestions that fit the remaining macros.`;
+    }
+  }
+
+  else if (mode === "tasks") {
+    system += `\n\n[MODE: PRODUCTIVITY COACH]
+Focus on task prioritization, habit building, focus strategies, breaking down goals, and overcoming procrastination.`;
+
+    if (taskContext) {
+      const { todayDate, pendingToday, completedToday, overdue, totalPending } = taskContext;
+      system += `\n\n=== ${userName.toUpperCase()}'S TASKS — ${todayDate} ===`;
+
+      if (overdue.length > 0) {
+        system += `\nOVERDUE (${overdue.length}): ` + overdue.map((t: any) =>
+          `"${t.title}" (due ${t.dueDate}${t.priority ? `, ${t.priority} priority` : ""})`
+        ).join(", ");
+      }
+      if (pendingToday.length > 0) {
+        system += `\nDUE TODAY (${pendingToday.length}): ` + pendingToday.map((t: any) =>
+          `"${t.title}"${t.priority ? ` [${t.priority}]` : ""}${t.projectName ? ` (${t.projectName})` : ""}`
+        ).join(", ");
+      } else {
+        system += `\nNo tasks scheduled for today.`;
+      }
+      if (completedToday.length > 0) {
+        system += `\nCOMPLETED TODAY (${completedToday.length}): ` + completedToday.map((t: any) => `"${t.title}"`).join(", ");
+      }
+      system += `\nTotal pending tasks: ${totalPending}
+
+Reference their actual tasks when giving advice. Celebrate completed tasks. Help them prioritise what's overdue.`;
+    }
+  }
+
+  else {
+    // General mode — give a brief overview of all available data
+    system += `\n\n[MODE: GENERAL]
+The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: system },
         ...messages,
       ],
-      max_tokens: 400,
-      temperature: 0.7,
+      max_tokens: 500,
+      temperature: 0.65,
     });
 
     const reply = completion.choices[0].message.content ?? "";
     return NextResponse.json({ reply });
   } catch (err: any) {
+    console.error("Orbit API error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -9,6 +9,7 @@ import {
 import { cn, PROJECT_COLORS, todayString, localDateString } from "@/lib/utils";
 import { getTasks, createTask, updateTask, deleteTask, getProjects, createProject } from "@/lib/firestore";
 import { useToast } from "@/components/ui/Toast";
+import { setTaskContext } from "@/lib/orbitContext";
 import type { Task, Project, TaskPriority } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -129,8 +130,27 @@ export default function TaskBoard() {
   useEffect(() => {
     if (!userId || !selectedProject) return;
     setLoading(true);
-    getTasks(userId, selectedProject).then(setTasks).finally(() => setLoading(false));
-  }, [userId, selectedProject]);
+    getTasks(userId, selectedProject).then((loaded) => {
+      setTasks(loaded);
+      // Write to Orbit context so chatbot knows the user's tasks
+      const t = todayString();
+      const todayStart = new Date(t + "T00:00:00").getTime();
+      const activeProject = projects.find(p => p.id === selectedProject);
+      setTaskContext({
+        todayDate: t,
+        pendingToday: loaded.filter(tk =>
+          tk.status === "pending" && (tk.dueDate === t || (!tk.dueDate))
+        ).map(tk => ({ title: tk.title, priority: tk.priority ?? undefined, projectName: activeProject?.name })),
+        completedToday: loaded.filter(tk =>
+          tk.status === "completed" && tk.completedAt && tk.completedAt >= todayStart
+        ).map(tk => ({ title: tk.title, completedAt: tk.completedAt })),
+        overdue: loaded.filter(tk =>
+          tk.status === "pending" && tk.dueDate && tk.dueDate < t
+        ).map(tk => ({ title: tk.title, dueDate: tk.dueDate!, priority: tk.priority ?? undefined })),
+        totalPending: loaded.filter(tk => tk.status === "pending").length,
+      });
+    }).finally(() => setLoading(false));
+  }, [userId, selectedProject, projects]);
 
   // ── Computed ──
   const weekDates    = getWeekDates(weekAnchor);

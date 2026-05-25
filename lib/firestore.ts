@@ -25,6 +25,14 @@ export async function deleteProject(projectId: string) {
 }
 
 // ── Tasks ──────────────────────────────────────────────────────────────────────
+export async function getAllTasks(userId: string): Promise<Task[]> {
+  const q = query(collection(db, "tasks"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Task))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export async function getTasks(userId: string, projectId: string): Promise<Task[]> {
   const q = query(
     collection(db, "tasks"),
