@@ -275,6 +275,73 @@
   transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ── Aurora orb background ── */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.dark .aurora-bg {
+  opacity: 1;
+}
+.aurora-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.aurora-orb-1 {
+  width: min(65vw, 700px);
+  height: min(65vw, 700px);
+  top: -15%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 60%, transparent 100%);
+  filter: blur(80px);
+  animation: aurora-drift-1 18s ease-in-out infinite;
+}
+.aurora-orb-2 {
+  width: min(55vw, 620px);
+  height: min(55vw, 620px);
+  bottom: -10%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.04) 60%, transparent 100%);
+  filter: blur(90px);
+  animation: aurora-drift-2 22s ease-in-out infinite;
+}
+.aurora-orb-3 {
+  width: min(42vw, 500px);
+  height: min(42vw, 500px);
+  top: 40%;
+  left: 35%;
+  background: radial-gradient(circle, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.03) 60%, transparent 100%);
+  filter: blur(72px);
+  animation: aurora-drift-3 14s ease-in-out infinite;
+}
+
+@keyframes aurora-drift-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(-40px, 50px) scale(1.06); }
+  50%  { transform: translate(30px, 80px) scale(0.96); }
+  75%  { transform: translate(-20px, 30px) scale(1.04); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes aurora-drift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  30%  { transform: translate(60px, -50px) scale(1.08); }
+  60%  { transform: translate(-30px, -70px) scale(0.94); }
+  85%  { transform: translate(40px, -20px) scale(1.03); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes aurora-drift-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-50px, 40px) scale(1.1); }
+  66%  { transform: translate(40px, -50px) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
 /* Glass card - light mode */
 .glass {
   background: rgba(255, 255, 255, 0.7);

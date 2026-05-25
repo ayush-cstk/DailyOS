@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import {
   Plus, FolderOpen, Trash2, CheckCircle2, Circle, Palette, X,
@@ -624,9 +624,14 @@ function TaskCard({
   task: Task; onToggle: (t: Task) => void; onDelete: (id: string) => void;
   onEdit: (t: Task) => void; color?: string; isOverdue?: boolean;
 }) {
-  const done     = task.status === "completed";
-  const priority = task.priority;
-  const today    = todayString();
+  const done       = task.status === "completed";
+  const priority   = task.priority;
+  const today      = todayString();
+  const [completing, setCompleting] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   // Border color priority: overdue > task priority > project color
   const borderColor = isOverdue
@@ -635,23 +640,54 @@ function TaskCard({
       ? PRIORITY_CONFIG[priority].color
       : color ?? "#6366F1";
 
+  const handleToggle = () => {
+    if (completing) return; // prevent double-tap during animation
+    if (done) {
+      // Un-completing: instant, no animation
+      onToggle(task);
+      return;
+    }
+    // Completing: play animation first, then commit
+    setCompleting(true);
+    timerRef.current = setTimeout(() => {
+      onToggle(task);
+      setCompleting(false);
+    }, 520);
+  };
+
   return (
     <div
       className={cn(
         "card flex items-start gap-3 group transition-all duration-200 animate-slide-up",
+        completing && "completing-glow",
         done ? "opacity-50" : isOverdue ? "" : "hover:border-white/10",
         isOverdue && !done ? "bg-red-500/[0.03]" : "",
       )}
       style={{ borderLeftColor: borderColor, borderLeftWidth: "3px" }}>
 
       {/* Toggle button */}
-      <button onClick={() => onToggle(task)}
-        className="flex-shrink-0 active:scale-90 transition-transform mt-0.5">
-        {done
-          ? <CheckCircle2 className="w-5 h-5 animate-checkmark" style={{ color: borderColor }} />
-          : isOverdue
-            ? <AlertCircle className="w-5 h-5 text-red-400" />
-            : <Circle className="w-5 h-5 text-gray-300 dark:text-[#333] hover:text-gray-400 transition-colors" />}
+      <button
+        onClick={handleToggle}
+        disabled={completing}
+        className="flex-shrink-0 mt-0.5 relative"
+        style={{ width: "20px", height: "20px" }}
+      >
+        {completing ? (
+          <>
+            {/* Expanding ripple ring */}
+            <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ripple" />
+            {/* Spring-bouncing filled check */}
+            <CheckCircle2
+              className="w-5 h-5 text-emerald-400 animate-check-pop relative z-10"
+            />
+          </>
+        ) : done ? (
+          <CheckCircle2 className="w-5 h-5 animate-checkmark" style={{ color: borderColor }} />
+        ) : isOverdue ? (
+          <AlertCircle className="w-5 h-5 text-red-400" />
+        ) : (
+          <Circle className="w-5 h-5 text-gray-300 dark:text-[#333] hover:text-gray-400 transition-colors" />
+        )}
       </button>
 
       {/* Body — tap to edit on mobile */}

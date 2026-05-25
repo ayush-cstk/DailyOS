@@ -113,6 +113,26 @@ export interface DietDay {
   createdAt: number;
 }
 
+// ── Workout Templates ──────────────────────────────────────────────────────────
+export interface TemplateExercise {
+  id: string;
+  name: string;
+  defaultSets: number;
+  defaultReps: number;
+  defaultWeight?: number;
+  defaultUnit: WeightUnit;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  userId: string;       // empty string "" for preset templates (client-side only)
+  name: string;
+  description?: string;
+  exercises: TemplateExercise[];
+  isPreset?: boolean;   // true for built-in splits
+  createdAt: number;
+}
+
 // ── Auth ───────────────────────────────────────────────────────────────────────
 export interface AppUser {
   id: string;

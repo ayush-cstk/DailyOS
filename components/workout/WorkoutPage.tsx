@@ -4,14 +4,16 @@ import { useSession } from "next-auth/react";
 import {
   Plus, Dumbbell, Trash2, ChevronDown, ChevronUp, Sparkles, Scale, Clock,
   Save, History, X, Loader2, Flame, Activity, PersonStanding, Bike,
-  Mountain, Waves, Footprints, Timer, MapPin, TrendingUp,
+  Mountain, Waves, Footprints, Timer, MapPin, TrendingUp, LayoutTemplate,
+  BookOpen, Check, Pencil,
 } from "lucide-react";
 import { cn, generateId, todayString, formatDate, localDateString } from "@/lib/utils";
-import { saveWorkoutSession, getWorkoutSessions, getBodyWeightEntries, logBodyWeight } from "@/lib/firestore";
+import { saveWorkoutSession, getWorkoutSessions, getBodyWeightEntries, logBodyWeight, getWorkoutTemplates, saveWorkoutTemplate, deleteWorkoutTemplate } from "@/lib/firestore";
+import { WORKOUT_PRESETS } from "@/lib/workoutPresets";
 import { setWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import { MarkdownText } from "@/components/ui/MarkdownText";
-import type { WorkoutSession, ExerciseLog, SetLog, WeightUnit, BodyWeightEntry, CardioLog, CardioActivity } from "@/types";
+import type { WorkoutSession, ExerciseLog, SetLog, WeightUnit, BodyWeightEntry, CardioLog, CardioActivity, WorkoutTemplate } from "@/types";
 
 // ── Cardio config ─────────────────────────────────────────────────────────────
 const CARDIO_META: Record<CardioActivity, { label: string; icon: React.ElementType; color: string; met: number; unit: string }> = {
@@ -38,9 +40,20 @@ export default function WorkoutPage() {
   const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
   const { toast } = useToast();
 
-  const [view, setView] = useState<"log" | "history">("log");
+  const [view, setView] = useState<"log" | "history" | "templates">("log");
   const [pastSessions, setPastSessions] = useState<WorkoutSession[]>([]);
   const [bodyWeightEntries, setBodyWeightEntries] = useState<BodyWeightEntry[]>([]);
+
+  // Cardio-only add for after today's workout is done
+  const [showAddCardioToday, setShowAddCardioToday] = useState(false);
+  const [cardioLogsToday, setCardioLogsToday] = useState<CardioLog[]>([]);
+  const [savingCardioToday, setSavingCardioToday] = useState(false);
+
+  // Templates
+  const [userTemplates, setUserTemplates] = useState<WorkoutTemplate[]>([]);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
 
   // Strength
   const [exercises, setExercises] = useState<ExerciseLog[]>([]);
@@ -93,6 +106,7 @@ export default function WorkoutPage() {
         })),
       });
     });
+    getWorkoutTemplates(userId).then(setUserTemplates);
     getBodyWeightEntries(userId).then((entries) => {
       setBodyWeightEntries(entries);
       if (entries.length > 0) {
@@ -105,6 +119,9 @@ export default function WorkoutPage() {
       }
     });
   }, [userId]);
+
+  // Today's session (if already logged)
+  const todaySession = pastSessions.find((s) => s.date === todayString()) ?? null;
 
   const totalSets = exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
   const totalReps = exercises.reduce((acc, ex) => acc + ex.sets.reduce((s, set) => s + (set.reps || 0), 0), 0);
@@ -129,6 +146,78 @@ export default function WorkoutPage() {
     setShowAddCardio(false);
   };
   const removeCardioLog = (id: string) => setCardioLogs((prev) => prev.filter((c) => c.id !== id));
+
+  // ── Save cardio-only session (after today's strength workout is done) ──
+  const handleSaveCardioToday = async () => {
+    if (cardioLogsToday.length === 0) return;
+    setSavingCardioToday(true);
+    try {
+      const session_data: Omit<WorkoutSession, "id"> = {
+        userId, date: todayString(), exercises: [], durationMinutes: 0,
+        cardioLogs: cardioLogsToday, createdAt: Date.now(),
+      };
+      if (bodyWeight) session_data.bodyWeightKg = parseFloat(bodyWeight);
+      const saved = await saveWorkoutSession(session_data);
+      setPastSessions((prev) => [saved, ...prev]);
+      setCardioLogsToday([]);
+      setShowAddCardioToday(false);
+      toast("Cardio logged! 🔥", "success");
+    } catch { toast("Failed to save cardio", "error"); }
+    finally { setSavingCardioToday(false); }
+  };
+
+  // ── Load template into log form ──
+  const handleLoadTemplate = (tpl: WorkoutTemplate) => {
+    const loaded: ExerciseLog[] = tpl.exercises.map((te) => ({
+      id: generateId(),
+      name: te.name,
+      sets: Array.from({ length: te.defaultSets }, () => ({
+        id: generateId(),
+        reps: te.defaultReps,
+        weight: te.defaultUnit === "bodyweight" ? undefined : (te.defaultWeight ?? 0),
+        unit: te.defaultUnit,
+        completed: false,
+      })),
+    }));
+    setExercises(loaded);
+    setView("log");
+    toast(`Loaded "${tpl.name}" ✓`, "success");
+  };
+
+  // ── Save current exercises as template ──
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim() || exercises.length === 0) return;
+    setSavingTemplate(true);
+    try {
+      const tpl: Omit<WorkoutTemplate, "id"> = {
+        userId,
+        name: templateName.trim(),
+        exercises: exercises.map((ex) => ({
+          id: generateId(),
+          name: ex.name,
+          defaultSets: ex.sets.length,
+          defaultReps: ex.sets[0]?.reps ?? 8,
+          defaultWeight: ex.sets[0]?.unit === "bodyweight" ? undefined : (ex.sets[0]?.weight ?? 0),
+          defaultUnit: ex.sets[0]?.unit ?? "kg",
+        })),
+        isPreset: false,
+        createdAt: Date.now(),
+      };
+      const saved = await saveWorkoutTemplate(tpl);
+      setUserTemplates((prev) => [saved, ...prev]);
+      setTemplateName("");
+      setShowSaveTemplate(false);
+      toast(`Template "${saved.name}" saved!`, "success");
+    } catch { toast("Failed to save template", "error"); }
+    finally { setSavingTemplate(false); }
+  };
+
+  // ── Delete user template ──
+  const handleDeleteTemplate = async (id: string) => {
+    await deleteWorkoutTemplate(id);
+    setUserTemplates((prev) => prev.filter((t) => t.id !== id));
+    toast("Template deleted", "success");
+  };
 
   // ── AI Summary ──
   const handleSummarize = async () => {
@@ -206,16 +295,169 @@ export default function WorkoutPage() {
 
       {/* ── View toggle ── */}
       <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit" style={{ background: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
-        {(["log", "history"] as const).map((v) => (
-          <button key={v} onClick={() => setView(v)}
-            className="px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all duration-150"
-            style={view === v ? { background: "var(--surface-0)", color: "var(--text-1)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : { color: "var(--text-3)" }}>
-            {v === "log" ? "Log Workout" : "History"}
+        {([
+          { key: "log",       label: "Log Workout" },
+          { key: "templates", label: "Templates"   },
+          { key: "history",   label: "History"     },
+        ] as const).map(({ key, label }) => (
+          <button key={key} onClick={() => setView(key)}
+            className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150 flex items-center gap-1.5"
+            style={view === key ? { background: "var(--surface-0)", color: "var(--text-1)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : { color: "var(--text-3)" }}>
+            {key === "templates" && <LayoutTemplate className="w-3.5 h-3.5" />}
+            {label}
           </button>
         ))}
       </div>
 
       {view === "log" ? (
+        todaySession ? (
+          /* ── TODAY'S WORKOUT SUMMARY ── */
+          <div className="space-y-4 animate-fade-in">
+            {/* Done banner */}
+            <div className="rounded-2xl p-4 flex items-center gap-3"
+              style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.06) 100%)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                <Dumbbell className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-sm text-emerald-400">Today's Workout Complete ✓</p>
+                <p className="text-xs mt-0.5 font-medium" style={{ color: "var(--text-3)" }}>
+                  {todaySession.durationMinutes > 0 ? `${todaySession.durationMinutes} min · ` : ""}
+                  {todaySession.exercises.length > 0 ? `${todaySession.exercises.length} exercises · ${todaySession.exercises.reduce((a, e) => a + e.sets.length, 0)} sets` : "Cardio only"}
+                </p>
+              </div>
+              <button onClick={() => setView("history")}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: "rgba(16,185,129,0.15)", color: "var(--text-2)" }}>
+                Full history
+              </button>
+            </div>
+
+            {/* Stats row */}
+            {(() => {
+              const exCount  = todaySession.exercises.length;
+              const setCount = todaySession.exercises.reduce((a, e) => a + e.sets.length, 0);
+              const mins     = todaySession.durationMinutes;
+              const cals     = (todaySession.cardioLogs ?? []).reduce((s, c) => s + (c.caloriesBurned ?? 0), 0);
+              const stats = [
+                { label: "Exercises", val: exCount,  icon: Dumbbell,  color: "text-blue-400 bg-blue-500/10" },
+                { label: "Sets",      val: setCount, icon: Activity,  color: "text-violet-400 bg-violet-500/10" },
+                { label: "Duration",  val: mins > 0 ? `${mins}m` : "—", icon: Clock,     color: "text-orange-400 bg-orange-500/10" },
+                { label: "Kcal",      val: cals > 0 ? cals : "—",      icon: Flame,     color: "text-emerald-400 bg-emerald-500/10" },
+              ];
+              return (
+                <div className="grid grid-cols-4 gap-2">
+                  {stats.map((s) => (
+                    <div key={s.label} className="card text-center py-3 px-1">
+                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1", s.color)}>
+                        <s.icon className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-base font-black" style={{ color: "var(--text-1)" }}>{s.val}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Exercise breakdown */}
+            {todaySession.exercises.length > 0 && (
+              <div className="card space-y-3">
+                <p className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Exercises</p>
+                {todaySession.exercises.map((ex) => (
+                  <div key={ex.id}>
+                    <p className="text-sm font-bold mb-2" style={{ color: "var(--text-2)" }}>{ex.name}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ex.sets.map((set, i) => (
+                        <span key={set.id} className="badge bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20 text-xs">
+                          {i + 1}: {set.reps}r {set.unit === "bodyweight" ? "BW" : `× ${set.weight}${set.unit}`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cardio already logged today */}
+            {(todaySession.cardioLogs ?? []).length > 0 && (
+              <div className="card space-y-2">
+                <p className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
+                  <Footprints className="w-3 h-3 text-emerald-400" /> Cardio
+                </p>
+                {todaySession.cardioLogs!.map((c) => {
+                  const meta = CARDIO_META[c.activity];
+                  const Icon = meta.icon;
+                  return (
+                    <div key={c.id} className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{ background: "var(--surface-2)" }}>
+                      <span className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-emerald-400" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{meta.label}</p>
+                        <p className="text-xs" style={{ color: "var(--text-3)" }}>
+                          {c.durationMinutes}min{c.distanceKm ? ` · ${c.distanceKm}${meta.unit}` : ""}
+                          {c.caloriesBurned ? ` · ${c.caloriesBurned} kcal` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* AI coach report */}
+            {todaySession.summary && (
+              <div className="card border-none bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-blue-950/40">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="font-bold text-sm" style={{ color: "var(--text-1)" }}>Coach Report</span>
+                </div>
+                <div className="rounded-xl p-3" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <MarkdownText text={todaySession.summary} />
+                </div>
+              </div>
+            )}
+
+            {/* ── Add Cardio for Today ── */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                  <Footprints className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: "var(--text-2)" }}>Add Cardio</h2>
+              </div>
+
+              <div className="space-y-2">
+                {cardioLogsToday.map((c) => (
+                  <CardioCard key={c.id} log={c} onRemove={() => setCardioLogsToday((prev) => prev.filter((x) => x.id !== c.id))} />
+                ))}
+              </div>
+
+              {!showAddCardioToday ? (
+                <button onClick={() => setShowAddCardioToday(true)}
+                  className="w-full card border-2 border-dashed flex items-center justify-center gap-2 text-sm font-semibold py-4 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all"
+                  style={{ borderColor: "rgba(16,185,129,0.2)", color: "var(--text-3)" }}>
+                  <Plus className="w-4 h-4" /> Log cardio for today
+                </button>
+              ) : (
+                <AddCardioForm bodyWeightKg={bwKg}
+                  onAdd={(log) => { setCardioLogsToday((prev) => [...prev, { ...log, id: generateId() }]); setShowAddCardioToday(false); }}
+                  onCancel={() => setShowAddCardioToday(false)} />
+              )}
+
+              {cardioLogsToday.length > 0 && (
+                <button onClick={handleSaveCardioToday} disabled={savingCardioToday}
+                  className="w-full btn-primary flex items-center justify-center gap-2 text-sm py-3 mt-3">
+                  {savingCardioToday ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {savingCardioToday ? "Saving..." : "Save Cardio"}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="space-y-4">
           {/* Date & Duration */}
           <div className="card">
@@ -350,18 +592,41 @@ export default function WorkoutPage() {
 
           {/* Actions */}
           {hasAnything && (
-            <div className="flex gap-3 pt-1">
-              <button onClick={handleSummarize} disabled={summarizing}
-                className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl border transition-all active:scale-[0.97] disabled:opacity-60"
-                style={{ background: "var(--surface-2)", borderColor: "rgba(99,102,241,0.3)", color: "var(--text-1)" }}>
-                {summarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-indigo-400" />}
-                {summarizing ? "Analyzing..." : "AI Summary"}
-              </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex-1 btn-primary flex items-center justify-center gap-2 text-sm py-3">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {saving ? "Saving..." : "Save Workout"}
-              </button>
+            <div className="space-y-2 pt-1">
+              <div className="flex gap-3">
+                <button onClick={handleSummarize} disabled={summarizing}
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl border transition-all active:scale-[0.97] disabled:opacity-60"
+                  style={{ background: "var(--surface-2)", borderColor: "rgba(99,102,241,0.3)", color: "var(--text-1)" }}>
+                  {summarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-indigo-400" />}
+                  {summarizing ? "Analyzing..." : "AI Summary"}
+                </button>
+                <button onClick={handleSave} disabled={saving}
+                  className="flex-1 btn-primary flex items-center justify-center gap-2 text-sm py-3">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {saving ? "Saving..." : "Save Workout"}
+                </button>
+              </div>
+              {exercises.length > 0 && (
+                showSaveTemplate ? (
+                  <div className="flex gap-2 animate-slide-down">
+                    <input autoFocus className="input flex-1 text-sm" placeholder="Template name (e.g. My Leg Day)"
+                      value={templateName} onChange={(e) => setTemplateName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveAsTemplate()} />
+                    <button onClick={handleSaveAsTemplate} disabled={savingTemplate || !templateName.trim()}
+                      className="btn-primary text-sm px-4 flex items-center gap-1.5 disabled:opacity-40">
+                      {savingTemplate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                      Save
+                    </button>
+                    <button onClick={() => { setShowSaveTemplate(false); setTemplateName(""); }} className="btn-ghost p-2.5"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowSaveTemplate(true)}
+                    className="w-full flex items-center justify-center gap-2 text-xs font-semibold py-2.5 rounded-xl transition-all"
+                    style={{ color: "var(--text-3)", background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                    <LayoutTemplate className="w-3.5 h-3.5" /> Save as Template
+                  </button>
+                )
+              )}
             </div>
           )}
 
@@ -391,6 +656,48 @@ export default function WorkoutPage() {
             </div>
           )}
         </div>
+        ) /* end: no todaySession */
+      ) : view === "templates" ? (
+        <div className="space-y-6 animate-fade-in">
+          {/* Preset library */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="w-4 h-4 text-indigo-400" />
+              <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: "var(--text-2)" }}>Starter Library</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {WORKOUT_PRESETS.map((tpl) => (
+                <TemplateCard key={tpl.id} template={tpl} onLoad={() => handleLoadTemplate(tpl)} />
+              ))}
+            </div>
+          </div>
+
+          {/* User-saved templates */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <LayoutTemplate className="w-4 h-4 text-violet-400" />
+              <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: "var(--text-2)" }}>My Templates</h2>
+              <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
+                {userTemplates.length}
+              </span>
+            </div>
+            {userTemplates.length === 0 ? (
+              <div className="card border-2 border-dashed text-center py-8" style={{ borderColor: "var(--border)" }}>
+                <LayoutTemplate className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--text-3)" }} />
+                <p className="font-bold text-sm" style={{ color: "var(--text-2)" }}>No saved templates yet</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-3)" }}>Log a workout and hit "Save as Template"</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {userTemplates.map((tpl) => (
+                  <TemplateCard key={tpl.id} template={tpl}
+                    onLoad={() => handleLoadTemplate(tpl)}
+                    onDelete={() => handleDeleteTemplate(tpl.id)} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
           {pastSessions.length === 0 ? (
@@ -399,7 +706,7 @@ export default function WorkoutPage() {
               <p className="font-bold" style={{ color: "var(--text-2)" }}>No workouts logged yet</p>
               <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>Your history will appear here</p>
             </div>
-          ) : pastSessions.map((s) => <PastWorkoutCard key={s.id} session={s} />)}
+          ) : pastSessions.map((s) => <PastWorkoutCard key={s.id} session={s} defaultExpanded={s.date === todayString()} />)}
         </div>
       )}
 
@@ -653,8 +960,8 @@ function SetRow({ set, index, onUpdate, onRemove }: { set: SetLog; index: number
 }
 
 // ── PastWorkoutCard ────────────────────────────────────────────────────────────
-function PastWorkoutCard({ session: s }: { session: WorkoutSession }) {
-  const [expanded, setExpanded] = useState(false);
+function PastWorkoutCard({ session: s, defaultExpanded = false }: { session: WorkoutSession; defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const totalSets = s.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
   const totalCardioCals = (s.cardioLogs ?? []).reduce((sum, c) => sum + (c.caloriesBurned ?? 0), 0);
   return (
@@ -719,6 +1026,78 @@ function PastWorkoutCard({ session: s }: { session: WorkoutSession }) {
               <MarkdownText text={s.summary} />
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TemplateCard ───────────────────────────────────────────────────────────────
+function TemplateCard({ template: tpl, onLoad, onDelete }: {
+  template: WorkoutTemplate;
+  onLoad: () => void;
+  onDelete?: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const accentColor = tpl.isPreset
+    ? tpl.name.includes("Push") ? "#3B82F6"
+    : tpl.name.includes("Pull") ? "#8B5CF6"
+    : tpl.name.includes("Leg")  ? "#10B981"
+    : tpl.name.includes("Upper")? "#F59E0B"
+    : "#6366F1" // Full Body
+    : "#6366F1"; // user templates
+
+  return (
+    <div className="card transition-all duration-200 group"
+      style={{ borderLeftWidth: "3px", borderLeftColor: accentColor }}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-black text-sm" style={{ color: "var(--text-1)" }}>{tpl.name}</p>
+            {tpl.isPreset && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                Preset
+              </span>
+            )}
+          </div>
+          {tpl.description && (
+            <p className="text-xs mt-0.5 font-medium" style={{ color: "var(--text-3)" }}>{tpl.description}</p>
+          )}
+          <p className="text-xs mt-1 font-semibold" style={{ color: "var(--text-3)" }}>
+            {tpl.exercises.length} exercises · {tpl.exercises.reduce((a, e) => a + e.defaultSets, 0)} sets
+          </p>
+        </div>
+        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          <button onClick={() => setExpanded(!expanded)}
+            className="btn-ghost p-1.5 text-xs" title="Preview">
+            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          {onDelete && (
+            <button onClick={onDelete}
+              className="btn-ghost p-1.5 hover:text-red-400 transition-colors" title="Delete">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={onLoad}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
+            style={{ background: `${accentColor}20`, color: accentColor, border: `1px solid ${accentColor}40` }}>
+            <Pencil className="w-3 h-3" /> Load
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="mt-3 pt-3 space-y-1 animate-fade-in" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          {tpl.exercises.map((ex) => (
+            <div key={ex.id} className="flex items-center justify-between text-xs py-1">
+              <span className="font-semibold" style={{ color: "var(--text-2)" }}>{ex.name}</span>
+              <span className="font-bold" style={{ color: "var(--text-3)" }}>
+                {ex.defaultSets}×{ex.defaultReps}
+                {ex.defaultUnit !== "bodyweight" && ex.defaultWeight ? ` @ ${ex.defaultWeight}${ex.defaultUnit}` : ex.defaultUnit === "bodyweight" ? " BW" : ""}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

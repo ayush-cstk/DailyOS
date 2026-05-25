@@ -3,7 +3,7 @@ import {
   getDocs, getDoc, query, where, setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals } from "@/types";
+import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals, WorkoutTemplate } from "@/types";
 
 // ── Projects ───────────────────────────────────────────────────────────────────
 export async function getProjects(userId: string): Promise<Project[]> {
@@ -91,6 +91,12 @@ export async function logBodyWeight(entry: Omit<BodyWeightEntry, "id">): Promise
 }
 
 // ── Meals ──────────────────────────────────────────────────────────────────────
+export async function getAllMeals(userId: string): Promise<MealEntry[]> {
+  const q = query(collection(db, "meals"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as MealEntry));
+}
+
 export async function getMeals(userId: string, date: string): Promise<MealEntry[]> {
   const q = query(
     collection(db, "meals"),
@@ -122,4 +128,22 @@ export async function getMacroGoals(userId: string): Promise<MacroGoals | null> 
 
 export async function saveMacroGoals(userId: string, goals: MacroGoals) {
   await setDoc(doc(db, "macroGoals", userId), goals);
+}
+
+// ── Workout Templates ──────────────────────────────────────────────────────────
+export async function getWorkoutTemplates(userId: string): Promise<WorkoutTemplate[]> {
+  const q = query(collection(db, "workoutTemplates"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as WorkoutTemplate))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function saveWorkoutTemplate(template: Omit<WorkoutTemplate, "id">): Promise<WorkoutTemplate> {
+  const ref = await addDoc(collection(db, "workoutTemplates"), template);
+  return { id: ref.id, ...template };
+}
+
+export async function deleteWorkoutTemplate(templateId: string): Promise<void> {
+  await deleteDoc(doc(db, "workoutTemplates", templateId));
 }

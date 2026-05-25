@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 import {
   getAllTasks, getMeals, getMacroGoals,
-  getWorkoutSessions, getBodyWeightEntries,
+  getWorkoutSessions, getBodyWeightEntries, getAllMeals,
 } from "@/lib/firestore";
+import ActivityHeatmap from "@/components/dashboard/ActivityHeatmap";
 import { todayString } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Task, MealEntry, MacroGoals, WorkoutSession, BodyWeightEntry } from "@/types";
@@ -830,6 +831,7 @@ export default function HomeView() {
   const [tasks,    setTasks]    = useState<Task[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [weights,  setWeights]  = useState<BodyWeightEntry[]>([]);
+  const [allMeals, setAllMeals] = useState<MealEntry[]>([]);
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
@@ -841,12 +843,14 @@ export default function HomeView() {
       getAllTasks(userId),
       getWorkoutSessions(userId),
       getBodyWeightEntries(userId),
-    ]).then(([m, g, t, s, w]) => {
+      getAllMeals(userId),
+    ]).then(([m, g, t, s, w, am]) => {
       setMeals(m);
       setGoals(g);
       setTasks(t);
       setSessions(s);
       setWeights(w);
+      setAllMeals(am);
     }).finally(() => setLoading(false));
   }, [userId]);
 
@@ -920,6 +924,14 @@ export default function HomeView() {
         <TasksCard   tasks={tasks}       loading={loading} />
         <WorkoutCard sessions={sessions} loading={loading} />
       </div>
+
+      {/* ── Activity Heatmap ── */}
+      <ActivityHeatmap
+        sessions={sessions}
+        tasks={tasks}
+        allMeals={allMeals}
+        loading={loading}
+      />
     </div>
   );
 }
