@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
   const userName = session.user?.name?.split(" ")[0] ?? "there";
   const { messages, mode, dietContext, workoutContext, taskContext } = await req.json();
 
-  // ── Real date + time (IST) ─────────────────────────────────────────────────
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-IN", {
     weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata",
@@ -21,16 +20,15 @@ export async function POST(req: NextRequest) {
     hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
   });
 
-  // ── Base system prompt ──────────────────────────────────────────────────────
   let system = `You are Orbit — the personal AI life coach built into DailyOS.
 You are talking to ${userName}.
 TODAY is ${dateStr}, ${timeStr} IST. Always use this when answering date/time questions.
 
 You are deeply knowledgeable about:
-- 🏋️ Strength training, progressive overload, exercise science, injury prevention
-- 🥗 Nutrition, Indian cuisine macros, macro tracking, meal planning, weight management
-- ✅ Productivity, habits, task prioritization, time management, focus
-- 📊 How fitness, nutrition, and productivity interconnect
+- Strength training, progressive overload, exercise science, injury prevention
+- Nutrition, Indian cuisine macros, macro tracking, meal planning, weight management
+- Productivity, habits, task prioritization, time management, focus
+- How fitness, nutrition, and productivity interconnect
 
 Personality: You are direct, specific, encouraging, and practical — like a coach who actually knows the user's data.
 Never give vague generic advice. Always reference the user's REAL data when available.
@@ -38,7 +36,6 @@ Format: use **bold** for key points and - for bullet lists. Keep responses under
 You are deeply familiar with Indian food, Indian lifestyle, Indian portion sizes, and Indian fitness culture.
 NEVER say you don't know today's date — you always know it.`;
 
-  // ── Mode-specific context ──────────────────────────────────────────────────
   if (mode === "workout") {
     system += `\n\n[MODE: WORKOUT COACH]
 Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
@@ -46,8 +43,7 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
     if (workoutContext) {
       const { bodyWeightKg, recentSessions } = workoutContext;
       if (bodyWeightKg) {
-        system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===
-Body weight: ${bodyWeightKg} kg`;
+        system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${bodyWeightKg} kg`;
       }
       if (recentSessions?.length > 0) {
         system += `\n\n=== RECENT WORKOUT HISTORY (last ${recentSessions.length} sessions) ===`;
@@ -89,8 +85,7 @@ Focus on macros, Indian meal recommendations, calorie targets, protein sources, 
         : "  (nothing logged yet today)";
 
       system += `\n\n=== ${userName.toUpperCase()}'S NUTRITION — ${date} ===
-Meals logged:
-${mealLines}
+Meals logged:\n${mealLines}
 
 Totals:    ${totals.calories} kcal | ${totals.proteinG}g P | ${totals.carbsG}g C | ${totals.fatG}g F
 Goals:     ${goals.calories} kcal | ${goals.proteinG}g P | ${goals.carbsG}g C | ${goals.fatG}g F
@@ -109,7 +104,6 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
     if (taskContext) {
       const { todayDate, pendingToday, completedToday, overdue, totalPending } = taskContext;
       system += `\n\n=== ${userName.toUpperCase()}'S TASKS — ${todayDate} ===`;
-
       if (overdue.length > 0) {
         system += `\nOVERDUE (${overdue.length}): ` + overdue.map((t: any) =>
           `"${t.title}" (due ${t.dueDate}${t.priority ? `, ${t.priority} priority` : ""})`
@@ -125,26 +119,26 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
       if (completedToday.length > 0) {
         system += `\nCOMPLETED TODAY (${completedToday.length}): ` + completedToday.map((t: any) => `"${t.title}"`).join(", ");
       }
-      system += `\nTotal pending tasks: ${totalPending}
-
-Reference their actual tasks when giving advice. Celebrate completed tasks. Help them prioritise what's overdue.`;
+      system += `\nTotal pending tasks: ${totalPending}\n\nReference their actual tasks when giving advice. Celebrate completed tasks. Help them prioritise what's overdue.`;
     }
   }
 
   else {
-    // General mode — give a brief overview of all available data
     system += `\n\n[MODE: GENERAL]
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: system },
-        ...messages,
+        ...messages.map((m: { role: string; content: string }) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
       ],
-      max_tokens: 500,
+      max_tokens: 550,
       temperature: 0.65,
     });
 

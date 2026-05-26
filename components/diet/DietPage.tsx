@@ -395,6 +395,36 @@ function AddMealModal({ userId, date, onSave, onClose }: {
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  const [estimating, setEstimating] = useState(false);
+  const [estimated, setEstimated] = useState(false);
+  const lastEstimated = useRef("");
+
+  const estimateMacros = async (dishName: string) => {
+    if (!dishName.trim() || dishName.trim().length < 3) return;
+    if (dishName.trim() === lastEstimated.current) return;
+    // Only auto-estimate if user hasn't already filled in macros manually
+    if (calories || protein || carbs || fat) return;
+
+    setEstimating(true);
+    setEstimated(false);
+    try {
+      const res = await fetch("/api/estimate-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dishName: dishName.trim() }),
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setCalories(String(data.calories));
+        setProtein(String(data.proteinG));
+        setCarbs(String(data.carbsG));
+        setFat(String(data.fatG));
+        lastEstimated.current = dishName.trim();
+        setEstimated(true);
+      }
+    } catch { /* silently fail — user can fill manually */ }
+    finally { setEstimating(false); }
+  };
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -415,28 +445,73 @@ function AddMealModal({ userId, date, onSave, onClose }: {
       <div className="space-y-3">
         <div>
           <label className="label">Meal name *</label>
-          <input autoFocus className="input" placeholder="e.g. Chicken & rice"
-            value={name} onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()} />
+          <input
+            autoFocus
+            className="input"
+            placeholder="e.g. 2 besan cheela with curd"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setEstimated(false); }}
+            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+          />
+          <p className="text-[11px] mt-1 font-medium" style={{ color: "var(--text-3)" }}>
+            Tap the Calories field to auto-fill macros ✨
+          </p>
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Calories (kcal)</label>
-            <input type="number" className="input text-sm" placeholder="0" value={calories} onChange={(e) => setCalories(e.target.value)} />
+            <label className="label flex items-center gap-1.5">
+              Calories (kcal)
+              {estimating && <Loader2 className="w-3 h-3 animate-spin text-emerald-500" />}
+              {estimated && !estimating && <Sparkles className="w-3 h-3 text-emerald-500" />}
+            </label>
+            <input
+              type="number"
+              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
+              placeholder="0"
+              value={calories}
+              onFocus={() => estimateMacros(name)}
+              onChange={(e) => { setCalories(e.target.value); setEstimated(false); }}
+            />
           </div>
           <div>
             <label className="label">Protein (g)</label>
-            <input type="number" className="input text-sm" placeholder="0" value={protein} onChange={(e) => setProtein(e.target.value)} />
+            <input
+              type="number"
+              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
+              placeholder="0"
+              value={protein}
+              onChange={(e) => { setProtein(e.target.value); setEstimated(false); }}
+            />
           </div>
           <div>
             <label className="label">Carbs (g)</label>
-            <input type="number" className="input text-sm" placeholder="0" value={carbs} onChange={(e) => setCarbs(e.target.value)} />
+            <input
+              type="number"
+              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
+              placeholder="0"
+              value={carbs}
+              onChange={(e) => { setCarbs(e.target.value); setEstimated(false); }}
+            />
           </div>
           <div>
             <label className="label">Fat (g)</label>
-            <input type="number" className="input text-sm" placeholder="0" value={fat} onChange={(e) => setFat(e.target.value)} />
+            <input
+              type="number"
+              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
+              placeholder="0"
+              value={fat}
+              onChange={(e) => { setFat(e.target.value); setEstimated(false); }}
+            />
           </div>
         </div>
+
+        {estimated && (
+          <p className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> AI estimated — edit if needed
+          </p>
+        )}
+
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
           <button onClick={handleSave} disabled={!name.trim()} className="btn-primary flex-1 text-sm">Log meal</button>

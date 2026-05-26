@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
 
   const { exercises, cardioLogs, durationMinutes, bodyWeightKg } = await req.json();
 
-  // ── MET values for cardio calorie calculation ──
   const CARDIO_MET: Record<string, number> = {
     walking: 3.5, running: 9.8, cycling: 7.5, hiking: 5.3,
     mountain_climbing: 8.0, swimming: 7.0, jump_rope: 11.8,
@@ -20,7 +19,6 @@ export async function POST(req: NextRequest) {
 
   const weight = bodyWeightKg ?? 70;
 
-  // ── Pre-calculate cardio calories (MET × kg × hours) ──
   const cardioWithCalories = (cardioLogs ?? []).map((c: any) => {
     const met = CARDIO_MET[c.activity] ?? 5.0;
     const cals = Math.round(met * weight * (c.durationMinutes / 60));
@@ -49,17 +47,17 @@ export async function POST(req: NextRequest) {
   const hasStrength = (exercises ?? []).length > 0;
   const hasCardio = cardioWithCalories.length > 0;
 
-  const prompt = `You are a professional fitness coach. Analyze this workout and provide a concise, motivating, god-level coach summary.
+  const prompt = `You are a professional fitness coach. Analyze this workout and provide a concise, motivating summary.
 
 Athlete body weight: ${bodyWeightKg ? `${bodyWeightKg} kg` : "not provided"}
 Workout duration: ${durationMinutes} minutes
 ${hasStrength ? `\nStrength exercises:\n${exerciseText}` : ""}
 ${hasCardio ? `\nCardio performed:\n${cardioText}\nTotal cardio calories burned: ~${totalCardioCals} kcal` : ""}
 
-Please provide a structured summary with:
+Provide a structured summary with:
 1. **Overall Performance** – how was this session overall (1-2 sentences)
 2. **What You Did Well** – specific strengths (2-3 bullet points)
-3. **Intensity Level** – rate it as exactly one of: Low / Moderate / High / Very High — and give a brief explanation
+3. **Intensity Level** – rate as exactly one of: Low / Moderate / High / Very High — brief explanation
 4. **Areas to Improve** – actionable suggestions (2-3 bullet points)
 5. **Next Session Tip** – one specific recommendation for next time
 ${hasCardio ? "6. **Cardio Insight** – brief comment on the cardio work and its fitness impact" : ""}
@@ -67,15 +65,15 @@ ${hasCardio ? "6. **Cardio Insight** – brief comment on the cardio work and it
 Keep it encouraging, specific, and under 280 words.`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 600,
+      max_tokens: 700,
+      temperature: 0.6,
     });
 
     const summary = completion.choices[0].message.content ?? "";
 
-    // ── Strength calories via MET + intensity parse ──
     const lowerSummary = summary.toLowerCase();
     let strengthMet = 5.0;
     if (lowerSummary.includes("very high")) strengthMet = 8.5;
@@ -83,8 +81,7 @@ Keep it encouraging, specific, and under 280 words.`;
     else if (lowerSummary.includes("moderate")) strengthMet = 5.0;
     else if (lowerSummary.includes("low")) strengthMet = 3.5;
 
-    const strengthHours = durationMinutes / 60;
-    const strengthCals = hasStrength ? Math.round(strengthMet * weight * strengthHours) : 0;
+    const strengthCals = hasStrength ? Math.round(strengthMet * weight * (durationMinutes / 60)) : 0;
     const caloriesBurned = strengthCals + totalCardioCals;
 
     return NextResponse.json({ summary, caloriesBurned, cardioWithCalories });

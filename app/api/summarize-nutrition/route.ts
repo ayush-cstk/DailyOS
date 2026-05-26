@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -47,19 +47,19 @@ CURRENT TOTALS vs GOALS:
 Provide a structured response:
 1. **Today's Score** – One sentence on how today is tracking overall.
 2. **Biggest Gap** – Which macro is most off target and why it matters.
-3. **What to Eat Next** – 2-3 specific Indian food suggestions (with approximate macros) to close the biggest gaps before end of day. Be practical — suggest common foods like dal, paneer, eggs, roti, rice, curd, chicken, soya chunks, etc.
-4. **One Thing to Avoid** – What to skip or limit for the rest of today based on what's already over target.
+3. **What to Eat Next** – 2-3 specific Indian food suggestions (with approximate macros) to close the biggest gaps before end of day.
+4. **One Thing to Avoid** – What to skip or limit for the rest of today.
 5. **Tomorrow's Focus** – One specific habit or meal change for tomorrow.
 
 Be concise, motivating, and specific. Under 220 words. No generic advice.`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 450,
+      max_tokens: 600,
+      temperature: 0.6,
     });
-
     const summary = completion.choices[0].message.content ?? "";
     return NextResponse.json({ summary });
   } catch (err: any) {

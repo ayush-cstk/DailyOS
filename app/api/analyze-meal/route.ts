@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const SYSTEM_PROMPT = `You are a highly accurate nutritionist AI with deep expertise in Indian cuisine from all regions — North Indian, South Indian, Maharashtrian, Bengali, Gujarati, Punjabi, and street food.
 Your job is to analyse a meal photo and return precise macro + fiber estimates.
@@ -13,9 +13,34 @@ Return ONLY raw JSON with no markdown, no explanation, no code block.`;
 
 const USER_PROMPT = `Analyse the meal in this photo carefully.
 
+=== STEP 0: VISUAL IDENTIFICATION GUIDE ===
+Before estimating macros, correctly identify each dish using these visual cues:
+
+FLATBREADS / PANCAKES (flat, round, cooked on tawa):
+- Besan/Moong dal chilla: FLAT PANCAKE shape, golden-yellow, smooth or slightly pitted surface, edges slightly crispy. NOT scrambled. NOT in a bowl.
+- Chapati/Roti: thin, dry, light brown spots from tawa, no batter sheen
+- Paratha: thicker than roti, layered, flaky, often with ghee sheen
+- Dosa: very thin, large, crispy edges, pale or golden
+
+SCRAMBLED / CRUMBLED dishes (loose, broken-up texture):
+- Egg bhurji / Paneer bhurji: loose, scrambled curds, chunks visible, usually with onion/tomato pieces
+- Poha: flattened rice flakes, soft and fluffy, with mustard seeds visible
+
+LIQUID / GRAVY dishes (in a bowl or katori, has visible liquid):
+- Dal: liquid, pourable, in a bowl or katori
+- Curry (chicken/paneer/etc): chunks in thick gravy, served in bowl
+- Sambar: thin brownish liquid with vegetables
+
+RICE dishes:
+- Plain rice: white grains, fluffy, in a mound or bowl
+- Biryani: layered rice, brownish/orange tint, with visible meat/veg pieces
+
+⚠️ KEY RULE: If food is FLAT and ROUND like a pancake on a plate → it is a chilla/dosa/roti, NOT a bhurji or dal.
+
 === STEP 1: IDENTIFY EVERY ITEM ===
+Look at the SHAPE, TEXTURE and FORM first, then name the dish.
 List each visible food item, estimated portion size, preparation method, and visible ghee/oil.
-Be specific: "3 medium chapatis (slight ghee sheen)", "~120g cooked soy nuggets in masala", "small katori dal (~150ml)", etc.
+Be specific: "2 besan chilla (flat round pancakes, golden yellow)", "~120g cooked soy nuggets in masala", "small katori dal (~150ml)", etc.
 
 === STEP 2: APPLY EXACT REFERENCE VALUES (per item) ===
 
@@ -71,13 +96,12 @@ Omelette 2 eggs (masala): 200 kcal | 13g P | 4g C | 15g F | 1g fiber
 Chicken curry (150g with gravy): 230 kcal | 28g P | 5g C | 10g F | 1g fiber
 Chicken tikka (100g, grilled): 160 kcal | 26g P | 4g C | 5g F | 0g fiber
 Butter chicken (200g with gravy): 320 kcal | 26g P | 10g C | 20g F | 1g fiber
-Chicken biryani 250g (above)
 Mutton curry (150g): 280 kcal | 25g P | 5g C | 18g F | 1g fiber
 Fish curry (150g): 200 kcal | 22g P | 5g C | 10g F | 1g fiber
 
 ── SOY / PLANT PROTEIN ─────────────────────────────────────────────
 Soy chunks/nuggets COOKED (100g): 112 kcal | 15g P | 8g C | 0.5g F | 1g fiber
-  ⚠ ALWAYS use cooked weight (1 dry = 2.5x cooked). Add 60 kcal for masala/oil.
+  ALWAYS use cooked weight (1 dry = 2.5x cooked). Add 60 kcal for masala/oil.
   Typical katori (~150g cooked + masala): 228 kcal | 22g P | 12g C | 4g F | 1.5g fiber
 Tofu (100g): 75 kcal | 8g P | 2g C | 4g F | 0.3g fiber
 
@@ -166,10 +190,9 @@ export async function POST(req: NextRequest) {
   const { imageBase64, mimeType } = body;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
       temperature: 0,
-      max_tokens: 600,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -180,12 +203,12 @@ export async function POST(req: NextRequest) {
               type: "image_url",
               image_url: {
                 url: `data:${mimeType};base64,${imageBase64}`,
-                detail: "high",
               },
             },
           ],
         },
       ],
+      max_tokens: 650,
     });
 
     const content = completion.choices[0].message.content ?? "{}";
