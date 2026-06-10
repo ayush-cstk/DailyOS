@@ -1,10 +1,12 @@
 import Navigation from "@/components/Navigation";
 import ProductTour from "@/components/ui/ProductTour";
 import AriaChatbot from "@/components/ui/AriaChatbot";
+import NotificationScheduler from "@/components/NotificationScheduler";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-secondary dark:bg-gray-950 flex flex-col relative">
-      {/* Desktop: sidebar | Mobile: bottom nav */}
+      <NotificationScheduler />
       <div className="flex flex-1 overflow-hidden relative z-10">
         <Navigation />
         <main className="flex-1 overflow-y-auto pt-14 md:pt-0 pb-28 md:pb-0 md:pl-0">

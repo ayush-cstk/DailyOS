@@ -3,12 +3,32 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import {
   Bell, BellOff, Utensils, Dumbbell, CheckSquare,
-  Check, Loader2, Clock,
+  Check, Loader2, Clock, Share, Plus, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNotificationPrefs, saveNotificationPrefs } from "@/lib/firestore";
 import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 import type { NotificationPrefs } from "@/types";
+
+// ── iOS / PWA detection ───────────────────────────────────────────────────────
+function useIOSPWAStatus() {
+  const [status, setStatus] = useState<{
+    isIOS: boolean;
+    isStandalone: boolean;
+    notifSupported: boolean;
+  }>({ isIOS: false, isStandalone: false, notifSupported: true });
+
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true;
+    const notifSupported = "Notification" in window;
+    setStatus({ isIOS, isStandalone, notifSupported });
+  }, []);
+
+  return status;
+}
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -115,10 +135,57 @@ function SectionCard({
   );
 }
 
+// ── iOS Add-to-Home-Screen guide ──────────────────────────────────────────────
+function IOSInstallGuide() {
+  return (
+    <div
+      className="rounded-2xl px-4 py-4 space-y-3"
+      style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/12">
+          <Bell style={{ width: 18, height: 18 }} className="text-indigo-400" />
+        </div>
+        <div>
+          <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
+            Install DailyOS to enable notifications
+          </p>
+          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+            iPhone requires the app to be added to your Home Screen before notifications can be enabled.
+          </p>
+        </div>
+      </div>
+
+      {/* Step-by-step */}
+      <div className="space-y-2 pl-1">
+        {[
+          { icon: Share, label: "Tap the Share button in Safari's toolbar" },
+          { icon: Plus,  label: 'Tap "Add to Home Screen"' },
+          { icon: Bell,  label: "Open DailyOS from your Home Screen, then come back here" },
+        ].map(({ icon: Icon, label }, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black"
+              style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}
+            >
+              {i + 1}
+            </div>
+            <div className="flex items-center gap-2">
+              <Icon style={{ width: 14, height: 14 }} className="text-indigo-400 shrink-0" />
+              <span className="text-xs" style={{ color: "var(--text-2)" }}>{label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function NotificationSettings() {
   const { data: session } = useSession();
   const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
+  const { isIOS, isStandalone, notifSupported } = useIOSPWAStatus();
 
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
@@ -126,14 +193,12 @@ export default function NotificationSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Load permission state
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("Notification" in window)) { setPermission("unsupported"); return; }
     setPermission(Notification.permission);
   }, []);
 
-  // Load prefs from Firestore
   useEffect(() => {
     if (!userId) return;
     getNotificationPrefs(userId).then(p => {
@@ -143,10 +208,14 @@ export default function NotificationSettings() {
 
   const requestPermission = async () => {
     if (!("Notification" in window)) return;
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === "granted" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result === "granted" && "serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      }
+    } catch {
+      // iOS in browser (non-standalone) throws — handled by IOSInstallGuide
     }
   };
 
@@ -166,6 +235,16 @@ export default function NotificationSettings() {
 
   const isGranted = permission === "granted";
   const isDenied  = permission === "denied";
+  const needsIOSInstall = isIOS && !isStandalone;
+
+  const sendTestNotification = () => {
+    if (Notification.permission !== "granted") return;
+    new Notification("🔔 DailyOS test", {
+      body: "Notifications are working! You'll get reminders at your configured times.",
+      icon: "/BrandLogo_Header.png",
+      tag: `test-${Date.now()}`,
+    });
+  };
 
   if (loading) {
     return (
@@ -177,8 +256,11 @@ export default function NotificationSettings() {
 
   return (
     <div className="space-y-4">
-      {/* ── Permission banner ── */}
-      {!isGranted && (
+      {/* ── iOS: must install as PWA first ── */}
+      {needsIOSInstall && <IOSInstallGuide />}
+
+      {/* ── Non-iOS or installed PWA: permission banner ── */}
+      {!needsIOSInstall && !isGranted && (
         <div
           className="rounded-2xl px-4 py-4 flex items-start gap-3"
           style={{
@@ -189,8 +271,8 @@ export default function NotificationSettings() {
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: isDenied ? "rgba(239,68,68,0.12)" : "rgba(99,102,241,0.12)" }}>
             {isDenied
-              ? <BellOff className="w-4.5 h-4.5 text-red-400" style={{ width: 18, height: 18 }} />
-              : <Bell className="w-4.5 h-4.5 text-indigo-400" style={{ width: 18, height: 18 }} />}
+              ? <BellOff style={{ width: 18, height: 18 }} className="text-red-400" />
+              : <Bell    style={{ width: 18, height: 18 }} className="text-indigo-400" />}
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
@@ -198,8 +280,8 @@ export default function NotificationSettings() {
             </p>
             <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
               {isDenied
-                ? "Go to your browser settings → Site permissions and allow notifications for this site."
-                : "Allow DailyOS to send you reminders so you never miss a meal log, workout, or task."}
+                ? "Go to Settings → Safari → DailyOS and allow notifications."
+                : "Allow DailyOS to remind you to log meals, workouts, and tasks."}
             </p>
             {!isDenied && (
               <button
@@ -214,7 +296,7 @@ export default function NotificationSettings() {
         </div>
       )}
 
-      {/* ── Meal reminders ── */}
+      {/* ── Reminder settings (always shown so user can pre-configure) ── */}
       <SectionCard
         icon={Utensils}
         iconColor="text-emerald-400"
@@ -224,12 +306,11 @@ export default function NotificationSettings() {
         enabled={prefs.mealReminders}
         onToggle={v => update({ mealReminders: v })}
       >
-        <TimeRow label="Breakfast"  value={prefs.breakfastTime} onChange={v => update({ breakfastTime: v })} disabled={!prefs.mealReminders} />
-        <TimeRow label="Lunch"      value={prefs.lunchTime}     onChange={v => update({ lunchTime: v })}     disabled={!prefs.mealReminders} />
-        <TimeRow label="Dinner"     value={prefs.dinnerTime}    onChange={v => update({ dinnerTime: v })}    disabled={!prefs.mealReminders} />
+        <TimeRow label="Breakfast" value={prefs.breakfastTime} onChange={v => update({ breakfastTime: v })} disabled={!prefs.mealReminders} />
+        <TimeRow label="Lunch"     value={prefs.lunchTime}     onChange={v => update({ lunchTime: v })}     disabled={!prefs.mealReminders} />
+        <TimeRow label="Dinner"    value={prefs.dinnerTime}    onChange={v => update({ dinnerTime: v })}    disabled={!prefs.mealReminders} />
       </SectionCard>
 
-      {/* ── Workout reminders ── */}
       <SectionCard
         icon={Dumbbell}
         iconColor="text-blue-400"
@@ -242,7 +323,6 @@ export default function NotificationSettings() {
         <TimeRow label="Remind me at" value={prefs.workoutTime} onChange={v => update({ workoutTime: v })} disabled={!prefs.workoutReminders} />
       </SectionCard>
 
-      {/* ── Task reminders ── */}
       <SectionCard
         icon={CheckSquare}
         iconColor="text-violet-400"
@@ -255,7 +335,6 @@ export default function NotificationSettings() {
         <TimeRow label="Remind me at" value={prefs.taskReminderTime} onChange={v => update({ taskReminderTime: v })} disabled={!prefs.taskReminders} />
       </SectionCard>
 
-      {/* ── Save status ── */}
       {(saving || saved) && (
         <div className="flex items-center justify-center gap-1.5 py-2">
           {saving
@@ -263,6 +342,40 @@ export default function NotificationSettings() {
             : <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-xs text-emerald-400">Saved</span></>}
         </div>
       )}
+
+      {/* ── Test notification ── */}
+      {isGranted && (
+        <div
+          className="rounded-2xl px-4 py-4 flex items-center justify-between"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}
+        >
+          <div>
+            <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>Test notifications</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>
+              Fire one right now to confirm they're working
+            </p>
+          </div>
+          <button
+            onClick={sendTestNotification}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+            style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8" }}
+          >
+            <Send style={{ width: 13, height: 13 }} />
+            Send test
+          </button>
+        </div>
+      )}
+
+      {/* ── Permission status debug row ── */}
+      <div className="flex items-center gap-2 px-1">
+        <div className={`w-2 h-2 rounded-full ${isGranted ? "bg-emerald-400" : isDenied ? "bg-red-400" : "bg-amber-400"}`} />
+        <span className="text-xs" style={{ color: "var(--text-3)" }}>
+          Browser permission: <span className="font-semibold">{permission}</span>
+          {isGranted && " — reminders will fire when this tab is open"}
+          {isDenied && " — blocked in browser settings"}
+          {!isGranted && !isDenied && " — click \"Allow notifications\" above"}
+        </span>
+      </div>
     </div>
   );
 }
