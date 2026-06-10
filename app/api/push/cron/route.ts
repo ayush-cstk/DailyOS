@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
     // For each user, check which reminders are due right now
     const tasks: Promise<void>[] = [];
 
-    for (const [userId, subs] of subsByUser) {
+    subsByUser.forEach((subs, userId) => {
       const prefs = prefsMap.get(userId);
-      if (!prefs) continue;
+      if (!prefs) return;
 
       const tz = prefs.timezone || "UTC";
 
@@ -119,14 +119,14 @@ export async function GET(req: NextRequest) {
         },
       ];
 
-      for (const r of reminders) {
-        if (!r.enabled || !matchesNow(r.time, tz)) continue;
-        for (const sub of subs) {
+      reminders.forEach(r => {
+        if (!r.enabled || !matchesNow(r.time, tz)) return;
+        subs.forEach(sub => {
           tasks.push(sendPush(sub, r.title, r.body, r.url));
           sent++;
-        }
-      }
-    }
+        });
+      });
+    });
 
     await Promise.all(tasks);
   } catch (err) {
