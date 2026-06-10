@@ -139,6 +139,7 @@ export async function GET(req: NextRequest) {
         hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
         keyLength: process.env.FIREBASE_PRIVATE_KEY?.length ?? 0,
         keyHasPemHeader: process.env.FIREBASE_PRIVATE_KEY?.includes("BEGIN PRIVATE KEY") ?? false,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "MISSING",
       },
     }, { status: 500 });
   }
