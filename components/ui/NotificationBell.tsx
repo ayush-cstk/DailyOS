@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Bell, BellOff, Check, X, Loader2 } from "lucide-react";
+import { Bell, BellOff, Check, X, Loader2, Settings } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type State = "unknown" | "loading" | "granted" | "denied" | "unsupported";
@@ -116,11 +117,11 @@ export default function NotificationBell({ className }: { className?: string }) 
                 </div>
                 <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>Notifications active</p>
               </div>
-              <div className="space-y-1.5 text-xs" style={{ color: "var(--text-3)" }}>
+              <div className="space-y-1.5 text-xs mb-3" style={{ color: "var(--text-3)" }}>
                 {[
-                  "🍽 Meal reminder every 3 hours",
-                  "💪 Workout reminder at 9am & 6:30pm",
-                  "✅ Task reminder at 8pm",
+                  "🍳 Breakfast, lunch & dinner reminders",
+                  "💪 Daily workout reminder",
+                  "✅ End-of-day task nudge",
                 ].map((line) => (
                   <div key={line} className="flex items-center gap-2">
                     <Check className="w-3 h-3 text-emerald-400 flex-shrink-0" />
@@ -128,6 +129,14 @@ export default function NotificationBell({ className }: { className?: string }) 
                   </div>
                 ))}
               </div>
+              <Link
+                href="/dashboard/settings"
+                onClick={() => setShowTooltip(false)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                <Settings className="w-3 h-3" />
+                Customize reminder times
+              </Link>
             </>
           ) : isDenied ? (
             <>

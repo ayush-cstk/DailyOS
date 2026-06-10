@@ -3,7 +3,7 @@ import {
   getDocs, getDoc, query, where, setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals, WorkoutTemplate } from "@/types";
+import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals, WorkoutTemplate, NotificationPrefs } from "@/types";
 
 // ── Projects ───────────────────────────────────────────────────────────────────
 export async function getProjects(userId: string): Promise<Project[]> {
@@ -146,4 +146,15 @@ export async function saveWorkoutTemplate(template: Omit<WorkoutTemplate, "id">)
 
 export async function deleteWorkoutTemplate(templateId: string): Promise<void> {
   await deleteDoc(doc(db, "workoutTemplates", templateId));
+}
+
+// ── Notification Preferences ───────────────────────────────────────────────────
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs | null> {
+  const snap = await getDoc(doc(db, "notificationPrefs", userId));
+  if (!snap.exists()) return null;
+  return snap.data() as NotificationPrefs;
+}
+
+export async function saveNotificationPrefs(userId: string, prefs: NotificationPrefs) {
+  await setDoc(doc(db, "notificationPrefs", userId), prefs);
 }

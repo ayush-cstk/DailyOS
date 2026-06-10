@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type { Task, WorkoutSession, MealEntry } from "@/types";
 
 interface Props {
@@ -32,6 +32,10 @@ interface TooltipState {
 export default function ActivityHeatmap({ sessions, tasks, allMeals, loading }: Props) {
   const todayStr = toDateStr(new Date());
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    setIsTouch(window.matchMedia("(hover: none)").matches);
+  }, []);
 
   // ── Build the 16-week grid ─────────────────────────────────────────────────
   const { weeks, monthLabels, startDateStr } = useMemo(() => {
@@ -254,13 +258,10 @@ export default function ActivityHeatmap({ sessions, tasks, allMeals, loading }: 
                       <div
                         key={di}
                         onMouseEnter={(e) => {
-                          if (isFuture) return;
+                          if (isFuture || isTouch) return;
                           const rect = e.currentTarget.getBoundingClientRect();
-                          setTooltip({
-                            content: tooltipContent,
-                            x: rect.left + rect.width / 2,
-                            y: rect.top,
-                          });
+                          const x = Math.max(80, Math.min(rect.left + rect.width / 2, window.innerWidth - 80));
+                          setTooltip({ content: tooltipContent, x, y: rect.top });
                         }}
                         onMouseLeave={() => setTooltip(null)}
                         style={{

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown, LayoutDashboard } from "lucide-react";
+import { CheckSquare, Dumbbell, Utensils, LogOut, User, Sun, Moon, ChevronDown, LayoutDashboard, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -53,6 +53,17 @@ const navItems = [
     dot: "bg-emerald-500",
     mobileActiveBg: "bg-emerald-50 dark:bg-emerald-500/10",
     mobileActiveText: "text-emerald-700 dark:text-emerald-300",
+  },
+  {
+    href: "/dashboard/settings", icon: Settings, label: "Settings",
+    activeBg: "bg-gray-50 dark:bg-transparent",
+    activeText: "text-gray-700 dark:text-white",
+    activeBorder: "dark:border-l-gray-500",
+    activeGlow: "dark:shadow-[0_0_12px_rgba(156,163,175,0.15)]",
+    iconActive: "text-gray-600 dark:text-gray-300",
+    dot: "bg-gray-500",
+    mobileActiveBg: "bg-gray-50 dark:bg-gray-500/10",
+    mobileActiveText: "text-gray-700 dark:text-gray-300",
   },
 ];
 

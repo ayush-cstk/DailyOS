@@ -133,6 +133,29 @@ export interface WorkoutTemplate {
   createdAt: number;
 }
 
+// ── Notification Preferences ───────────────────────────────────────────────────
+export interface NotificationPrefs {
+  mealReminders: boolean;
+  breakfastTime: string;    // "HH:MM"
+  lunchTime: string;        // "HH:MM"
+  dinnerTime: string;       // "HH:MM"
+  workoutReminders: boolean;
+  workoutTime: string;      // "HH:MM"
+  taskReminders: boolean;
+  taskReminderTime: string; // "HH:MM"
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  mealReminders: true,
+  breakfastTime: "08:00",
+  lunchTime: "13:00",
+  dinnerTime: "19:30",
+  workoutReminders: true,
+  workoutTime: "07:00",
+  taskReminders: true,
+  taskReminderTime: "20:00",
+};
+
 // ── Auth ───────────────────────────────────────────────────────────────────────
 export interface AppUser {
   id: string;

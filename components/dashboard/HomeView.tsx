@@ -109,7 +109,7 @@ function Card({
 }
 
 /* ─── Calorie ring ───────────────────────────────────────────────────────── */
-function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
+function CalorieRing({ consumed, goal, size = 120 }: { consumed: number; goal: number; size?: number }) {
   const R = 44;
   const C = 2 * Math.PI * R;
   const pct = goal > 0 ? Math.min(1, consumed / goal) : 0;
@@ -117,7 +117,7 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
 
   return (
     <div className="relative flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 100 100" className="w-[120px] h-[120px] -rotate-90">
+      <svg viewBox="0 0 100 100" style={{ width: size, height: size }} className="-rotate-90">
         <circle cx="50" cy="50" r={R} fill="none" strokeWidth="7" stroke="var(--surface-3)" />
         <circle
           cx="50" cy="50" r={R} fill="none" strokeWidth="7"
@@ -128,10 +128,10 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center leading-none">
-        <span className="text-[22px] font-black" style={{ color: "var(--text-1)" }}>
+        <span className={size < 110 ? "text-[16px] font-black" : "text-[22px] font-black"} style={{ color: "var(--text-1)" }}>
           {consumed}
         </span>
-        <span className="text-[10px] font-semibold mt-0.5" style={{ color: "var(--text-3)" }}>
+        <span className="text-[9px] font-semibold mt-0.5" style={{ color: "var(--text-3)" }}>
           / {goal} kcal
         </span>
       </div>
@@ -204,10 +204,16 @@ function CalorieCard({
       </div>
 
       {/* Body */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-        <CalorieRing consumed={Math.round(totals.cal)} goal={g.calories} />
+      <div className="flex flex-row items-center gap-4">
+        {/* Ring — smaller on mobile, larger on sm+ */}
+        <div className="block sm:hidden shrink-0">
+          <CalorieRing consumed={Math.round(totals.cal)} goal={g.calories} size={90} />
+        </div>
+        <div className="hidden sm:block shrink-0">
+          <CalorieRing consumed={Math.round(totals.cal)} goal={g.calories} size={120} />
+        </div>
 
-        <div className="flex-1 space-y-3 w-full">
+        <div className="flex-1 space-y-2.5 min-w-0">
           {/* Status pill */}
           <div className="flex flex-wrap items-center gap-2">
             <span

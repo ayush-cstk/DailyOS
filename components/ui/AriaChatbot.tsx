@@ -299,14 +299,17 @@ export default function AriaChatbot() {
   if (isMobile) {
     return (
       <>
-        {/* Panel: fixed from below the header to above the nav */}
+        {/* Panel: compact bottom sheet above nav bar */}
         <div
           className="fixed left-0 right-0 z-[150] flex flex-col"
           style={{
-            top: 56,   // matches the h-14 mobile header
-            bottom: 64, // matches the h-16 mobile nav
+            bottom: 64, // sits above the h-16 mobile nav
+            maxHeight: "68vh",
             background: "var(--surface-0)",
             borderTop: "1px solid var(--border)",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            boxShadow: "0 -8px 40px rgba(0,0,0,0.3)",
             transform: open ? "translateY(0)" : "translateY(110%)",
             transition: open
               ? "transform 0.35s cubic-bezier(0.34,1.4,0.64,1)"

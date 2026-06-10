@@ -1,13 +1,18 @@
 "use client";
 import { useEffect, useRef, useCallback } from "react";
+import type { NotificationPrefs } from "@/types";
+import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 
 export type NotificationPermission = "default" | "granted" | "denied";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function now() { return new Date(); }
-function todayAt(hours: number, minutes = 0): Date {
-  const d = new Date(); d.setHours(hours, minutes, 0, 0); return d;
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function parseTimeToday(hhmm: string): Date {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
 }
+
 function msUntil(target: Date): number {
   return Math.max(0, target.getTime() - Date.now());
 }
@@ -28,12 +33,17 @@ function showNotification(title: string, body: string, url = "/dashboard", tag?:
 // ── Hook ──────────────────────────────────────────────────────────────────────
 interface UseNotificationsOptions {
   userId: string;
-  lastMealAt?: number | null;    // Unix ms of last logged meal (any date)
-  lastWorkoutAt?: number | null; // Unix ms of last logged workout
+  prefs?: NotificationPrefs | null;
+  lastWorkoutAt?: number | null;
   pendingTasksCount?: number;
 }
 
-export function useNotifications({ userId, lastMealAt, lastWorkoutAt, pendingTasksCount }: UseNotificationsOptions) {
+export function useNotifications({
+  userId,
+  prefs,
+  lastWorkoutAt,
+  pendingTasksCount,
+}: UseNotificationsOptions) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearAll = () => {
@@ -53,93 +63,73 @@ export function useNotifications({ userId, lastMealAt, lastWorkoutAt, pendingTas
   }, []);
 
   // ── Meal reminders ────────────────────────────────────────────────────────
-  // If no meal logged in past 3 hours, nudge the user
   useEffect(() => {
     if (!userId || Notification.permission !== "granted") return;
+    const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
+    if (!p.mealReminders) return;
 
-    const THREE_HOURS = 3 * 60 * 60 * 1000;
-    const now_ms = Date.now();
-
-    // Determine when the last meal was relative to now
-    const sinceLastMeal = lastMealAt ? now_ms - lastMealAt : Infinity;
-    const mealsDueIn = sinceLastMeal >= THREE_HOURS
-      ? 0                               // overdue now
-      : THREE_HOURS - sinceLastMeal;    // due in future
-
-    const MEAL_MESSAGES = [
-      { delay: 0, title: "🍽 Time to log your meal?", body: "It's been 3+ hours. Had something? Log it to stay on track!" },
-      { delay: 3 * 60 * 60 * 1000, title: "🥗 Meal check-in", body: "Another 3 hours have passed. Don't forget to log your meals for accurate nutrition tracking." },
-      { delay: 6 * 60 * 60 * 1000, title: "⚠ Meal log overdue", body: "You haven't logged a meal in 6+ hours. Keep your nutrition data accurate — log now!" },
+    const meals = [
+      { time: p.breakfastTime, title: "🍳 Breakfast reminder", body: "Time to log your breakfast and start the day right!", tag: "meal-breakfast" },
+      { time: p.lunchTime,     title: "🥗 Lunch reminder",     body: "Don't forget to log your lunch meal!",              tag: "meal-lunch"    },
+      { time: p.dinnerTime,    title: "🍽 Dinner reminder",    body: "Log your dinner to hit your daily macro goals.",    tag: "meal-dinner"   },
     ];
 
-    MEAL_MESSAGES.forEach(({ delay, title, body }) => {
-      schedule(mealsDueIn + delay, () =>
-        showNotification(title, body, "/dashboard/diet", "meal-reminder")
-      );
+    meals.forEach(({ time, title, body, tag }) => {
+      const target = parseTimeToday(time);
+      const delay  = msUntil(target);
+      if (delay > 0) {
+        schedule(delay, () => showNotification(title, body, "/dashboard/diet", tag));
+      }
     });
 
     return clearAll;
-  }, [userId, lastMealAt, schedule]);
+  }, [userId, prefs, schedule]);
 
   // ── Workout reminders ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId || Notification.permission !== "granted") return;
+    const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
+    if (!p.workoutReminders) return;
 
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const workoutLogged = lastWorkoutAt ? lastWorkoutAt >= todayStart.getTime() : false;
+    if (workoutLogged) return;
 
-    if (workoutLogged) return; // already logged today
-
-    const morning = todayAt(9, 0);
-    const evening = todayAt(18, 30);
-    const n = now();
-
-    // 9am reminder
-    if (n < morning) {
-      schedule(msUntil(morning), () =>
-        showNotification(
-          "💪 Morning check-in",
-          "Have you completed your workout? Log it now to get your AI coach report!",
-          "/dashboard/workout",
-          "workout-morning"
-        )
-      );
-    }
-
-    // 6:30pm reminder if still not logged
-    if (n < evening) {
-      schedule(msUntil(evening), () => {
-        const todayStart2 = new Date(); todayStart2.setHours(0, 0, 0, 0);
-        const logged = lastWorkoutAt ? lastWorkoutAt >= todayStart2.getTime() : false;
+    const target = parseTimeToday(p.workoutTime);
+    const delay  = msUntil(target);
+    if (delay > 0) {
+      schedule(delay, () => {
+        const start = new Date(); start.setHours(0, 0, 0, 0);
+        const logged = lastWorkoutAt ? lastWorkoutAt >= start.getTime() : false;
         if (!logged) {
           showNotification(
-            "🏋 Evening workout reminder",
-            "No workout logged yet today. Fill in your session to unlock a personalized coach review!",
+            "💪 Workout reminder",
+            "Time to crush your session! Log it to track your progress.",
             "/dashboard/workout",
-            "workout-evening"
+            "workout-reminder"
           );
         }
       });
     }
 
     return clearAll;
-  }, [userId, lastWorkoutAt, schedule]);
+  }, [userId, prefs, lastWorkoutAt, schedule]);
 
   // ── Task reminders ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId || Notification.permission !== "granted") return;
+    const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
+    if (!p.taskReminders) return;
     if (!pendingTasksCount || pendingTasksCount === 0) return;
 
-    // 8pm reminder for pending tasks
-    const eightPm = todayAt(20, 0);
-    const n = now();
-
-    if (n < eightPm) {
-      schedule(msUntil(eightPm), () => {
+    const target = parseTimeToday(p.taskReminderTime);
+    const delay  = msUntil(target);
+    if (delay > 0) {
+      schedule(delay, () => {
         if (pendingTasksCount > 0) {
           showNotification(
             "✅ Tasks pending",
-            `You have ${pendingTasksCount} task${pendingTasksCount > 1 ? "s" : ""} due today. Check them off!`,
+            `You have ${pendingTasksCount} task${pendingTasksCount > 1 ? "s" : ""} pending. Check them off!`,
             "/dashboard/tasks",
             "task-reminder"
           );
@@ -148,7 +138,7 @@ export function useNotifications({ userId, lastMealAt, lastWorkoutAt, pendingTas
     }
 
     return clearAll;
-  }, [userId, pendingTasksCount, schedule]);
+  }, [userId, prefs, pendingTasksCount, schedule]);
 
   // ── Subscribe / Unsubscribe ───────────────────────────────────────────────
   const requestPermission = useCallback(async (): Promise<NotificationPermission> => {
@@ -160,7 +150,7 @@ export function useNotifications({ userId, lastMealAt, lastWorkoutAt, pendingTas
   const subscribePush = useCallback(async (): Promise<boolean> => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) return false; // VAPID not configured, skip silently
+    if (!vapidKey) return false;
 
     try {
       const reg = await navigator.serviceWorker.ready;

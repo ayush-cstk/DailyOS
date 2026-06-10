@@ -1,0 +1,268 @@
+"use client";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import {
+  Bell, BellOff, Utensils, Dumbbell, CheckSquare,
+  Check, Loader2, Clock,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getNotificationPrefs, saveNotificationPrefs } from "@/lib/firestore";
+import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
+import type { NotificationPrefs } from "@/types";
+
+// ── Toggle ────────────────────────────────────────────────────────────────────
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
+        checked ? "bg-indigo-500" : "bg-gray-600"
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transform transition-transform duration-200",
+          checked ? "translate-x-5" : "translate-x-0"
+        )}
+      />
+    </button>
+  );
+}
+
+// ── Time Picker Row ───────────────────────────────────────────────────────────
+function TimeRow({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className={cn(
+      "flex items-center justify-between py-3 px-4 rounded-xl transition-opacity",
+      disabled ? "opacity-40 pointer-events-none" : "",
+    )} style={{ background: "var(--surface-2)" }}>
+      <div className="flex items-center gap-2.5">
+        <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-3)" }} />
+        <span className="text-xs font-semibold" style={{ color: "var(--text-2)" }}>{label}</span>
+      </div>
+      <input
+        type="time"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="text-xs font-mono font-bold rounded-lg px-2 py-1.5 border-0 outline-none focus:ring-1 focus:ring-indigo-500"
+        style={{
+          background: "var(--surface-3)",
+          color: "var(--text-1)",
+          colorScheme: "dark",
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Section Card ──────────────────────────────────────────────────────────────
+function SectionCard({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  title,
+  subtitle,
+  enabled,
+  onToggle,
+  children,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  enabled: boolean;
+  onToggle: (v: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-3 px-4 py-4">
+        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
+          <Icon className={cn("w-4.5 h-4.5", iconColor)} style={{ width: 18, height: 18 }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{title}</p>
+          <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{subtitle}</p>
+        </div>
+        <Toggle checked={enabled} onChange={onToggle} />
+      </div>
+
+      {/* Time rows */}
+      {children && (
+        <div className="px-3 pb-3 space-y-1.5">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function NotificationSettings() {
+  const { data: session } = useSession();
+  const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
+
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Load permission state
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) { setPermission("unsupported"); return; }
+    setPermission(Notification.permission);
+  }, []);
+
+  // Load prefs from Firestore
+  useEffect(() => {
+    if (!userId) return;
+    getNotificationPrefs(userId).then(p => {
+      if (p) setPrefs(p);
+    }).finally(() => setLoading(false));
+  }, [userId]);
+
+  const requestPermission = async () => {
+    if (!("Notification" in window)) return;
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    if (result === "granted" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  };
+
+  const update = async (patch: Partial<NotificationPrefs>) => {
+    const next = { ...prefs, ...patch };
+    setPrefs(next);
+    setSaving(true);
+    setSaved(false);
+    try {
+      await saveNotificationPrefs(userId, next);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isGranted = permission === "granted";
+  const isDenied  = permission === "denied";
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-3)" }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* ── Permission banner ── */}
+      {!isGranted && (
+        <div
+          className="rounded-2xl px-4 py-4 flex items-start gap-3"
+          style={{
+            background: isDenied ? "rgba(239,68,68,0.07)" : "rgba(99,102,241,0.08)",
+            border: `1px solid ${isDenied ? "rgba(239,68,68,0.18)" : "rgba(99,102,241,0.2)"}`,
+          }}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: isDenied ? "rgba(239,68,68,0.12)" : "rgba(99,102,241,0.12)" }}>
+            {isDenied
+              ? <BellOff className="w-4.5 h-4.5 text-red-400" style={{ width: 18, height: 18 }} />
+              : <Bell className="w-4.5 h-4.5 text-indigo-400" style={{ width: 18, height: 18 }} />}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
+              {isDenied ? "Notifications blocked" : "Enable notifications"}
+            </p>
+            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+              {isDenied
+                ? "Go to your browser settings → Site permissions and allow notifications for this site."
+                : "Allow DailyOS to send you reminders so you never miss a meal log, workout, or task."}
+            </p>
+            {!isDenied && (
+              <button
+                onClick={requestPermission}
+                className="mt-3 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all active:scale-95"
+                style={{ background: "rgba(99,102,241,0.9)" }}
+              >
+                Allow notifications
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Meal reminders ── */}
+      <SectionCard
+        icon={Utensils}
+        iconColor="text-emerald-400"
+        iconBg="bg-emerald-500/10"
+        title="Meal Reminders"
+        subtitle="Reminders to log breakfast, lunch & dinner"
+        enabled={prefs.mealReminders}
+        onToggle={v => update({ mealReminders: v })}
+      >
+        <TimeRow label="Breakfast"  value={prefs.breakfastTime} onChange={v => update({ breakfastTime: v })} disabled={!prefs.mealReminders} />
+        <TimeRow label="Lunch"      value={prefs.lunchTime}     onChange={v => update({ lunchTime: v })}     disabled={!prefs.mealReminders} />
+        <TimeRow label="Dinner"     value={prefs.dinnerTime}    onChange={v => update({ dinnerTime: v })}    disabled={!prefs.mealReminders} />
+      </SectionCard>
+
+      {/* ── Workout reminders ── */}
+      <SectionCard
+        icon={Dumbbell}
+        iconColor="text-blue-400"
+        iconBg="bg-blue-500/10"
+        title="Workout Reminder"
+        subtitle="Daily nudge to log your training session"
+        enabled={prefs.workoutReminders}
+        onToggle={v => update({ workoutReminders: v })}
+      >
+        <TimeRow label="Remind me at" value={prefs.workoutTime} onChange={v => update({ workoutTime: v })} disabled={!prefs.workoutReminders} />
+      </SectionCard>
+
+      {/* ── Task reminders ── */}
+      <SectionCard
+        icon={CheckSquare}
+        iconColor="text-violet-400"
+        iconBg="bg-violet-500/10"
+        title="Task Reminder"
+        subtitle="End-of-day nudge for pending tasks"
+        enabled={prefs.taskReminders}
+        onToggle={v => update({ taskReminders: v })}
+      >
+        <TimeRow label="Remind me at" value={prefs.taskReminderTime} onChange={v => update({ taskReminderTime: v })} disabled={!prefs.taskReminders} />
+      </SectionCard>
+
+      {/* ── Save status ── */}
+      {(saving || saved) && (
+        <div className="flex items-center justify-center gap-1.5 py-2">
+          {saving
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--text-3)" }} /><span className="text-xs" style={{ color: "var(--text-3)" }}>Saving…</span></>
+            : <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-xs text-emerald-400">Saved</span></>}
+        </div>
+      )}
+    </div>
+  );
+}

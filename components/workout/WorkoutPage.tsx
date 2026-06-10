@@ -346,14 +346,16 @@ export default function WorkoutPage() {
                 { label: "Kcal",      val: cals > 0 ? cals : "—",      icon: Flame,     color: "text-emerald-400 bg-emerald-500/10" },
               ];
               return (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {stats.map((s) => (
-                    <div key={s.label} className="card text-center py-3 px-1">
-                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1", s.color)}>
-                        <s.icon className="w-3.5 h-3.5" />
+                    <div key={s.label} className="card text-center py-3 px-2 flex flex-row sm:flex-col items-center sm:items-center gap-3 sm:gap-0">
+                      <div className={cn("w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 sm:mx-auto sm:mb-1", s.color)}>
+                        <s.icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                       </div>
-                      <p className="text-base font-black" style={{ color: "var(--text-1)" }}>{s.val}</p>
-                      <p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>{s.label}</p>
+                      <div className="flex flex-col items-start sm:items-center">
+                        <p className="text-base font-black leading-none" style={{ color: "var(--text-1)" }}>{s.val}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: "var(--text-3)" }}>{s.label}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
