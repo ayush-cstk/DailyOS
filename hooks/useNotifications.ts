@@ -18,7 +18,7 @@ function msUntil(target: Date): number {
 }
 
 function showNotification(title: string, body: string, url = "/dashboard", tag?: string) {
-  if (typeof window === "undefined" || Notification.permission !== "granted") return;
+  if (typeof window === "undefined" || typeof Notification === "undefined" || Notification.permission !== "granted") return;
   const n = new Notification(title, {
     body,
     icon: "/BrandLogo_Header.png",
@@ -64,7 +64,7 @@ export function useNotifications({
 
   // ── Meal reminders ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!userId || Notification.permission !== "granted") return;
+    if (!userId || typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
     if (!p.mealReminders) return;
 
@@ -87,7 +87,7 @@ export function useNotifications({
 
   // ── Workout reminders ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!userId || Notification.permission !== "granted") return;
+    if (!userId || typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
     if (!p.workoutReminders) return;
 
@@ -117,7 +117,7 @@ export function useNotifications({
 
   // ── Task reminders ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!userId || Notification.permission !== "granted") return;
+    if (!userId || typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const p = prefs ?? DEFAULT_NOTIFICATION_PREFS;
     if (!p.taskReminders) return;
     if (!pendingTasksCount || pendingTasksCount === 0) return;

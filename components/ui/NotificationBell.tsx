@@ -13,7 +13,7 @@ export default function NotificationBell({ className }: { className?: string }) 
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!("Notification" in window)) { setState("unsupported"); return; }
+    if (!("Notification" in window) || typeof Notification === "undefined") { setState("unsupported"); return; }
     setState(Notification.permission as State);
   }, []);
 

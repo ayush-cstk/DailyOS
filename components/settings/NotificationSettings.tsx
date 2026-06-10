@@ -195,7 +195,7 @@ export default function NotificationSettings() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!("Notification" in window)) { setPermission("unsupported"); return; }
+    if (!("Notification" in window) || typeof Notification === "undefined") { setPermission("unsupported"); return; }
     setPermission(Notification.permission);
   }, []);
 
@@ -207,7 +207,7 @@ export default function NotificationSettings() {
   }, [userId]);
 
   const requestPermission = async () => {
-    if (!("Notification" in window)) return;
+    if (!("Notification" in window) || typeof Notification === "undefined") return;
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
@@ -238,7 +238,7 @@ export default function NotificationSettings() {
   const needsIOSInstall = isIOS && !isStandalone;
 
   const sendTestNotification = () => {
-    if (Notification.permission !== "granted") return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
     new Notification("🔔 DailyOS test", {
       body: "Notifications are working! You'll get reminders at your configured times.",
       icon: "/BrandLogo_Header.png",
