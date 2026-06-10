@@ -10,6 +10,16 @@ import { getNotificationPrefs, saveNotificationPrefs } from "@/lib/firestore";
 import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
 import type { NotificationPrefs } from "@/types";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const arr = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr.buffer;
+}
+
 // ── iOS / PWA detection ───────────────────────────────────────────────────────
 function useIOSPWAStatus() {
   const [status, setStatus] = useState<{
@@ -212,7 +222,22 @@ export default function NotificationSettings() {
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result === "granted" && "serviceWorker" in navigator) {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        // Create push subscription so server can send notifications when app is closed
+        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (vapidKey) {
+          try {
+            const sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            });
+            await fetch("/api/push/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ subscription: sub }),
+            });
+          } catch { /* push subscribe failed — in-app reminders still work */ }
+        }
       }
     } catch {
       // iOS in browser (non-standalone) throws — handled by IOSInstallGuide
@@ -220,7 +245,8 @@ export default function NotificationSettings() {
   };
 
   const update = async (patch: Partial<NotificationPrefs>) => {
-    const next = { ...prefs, ...patch };
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const next = { ...prefs, ...patch, timezone };
     setPrefs(next);
     setSaving(true);
     setSaved(false);

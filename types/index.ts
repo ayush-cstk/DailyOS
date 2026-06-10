@@ -143,6 +143,7 @@ export interface NotificationPrefs {
   workoutTime: string;      // "HH:MM"
   taskReminders: boolean;
   taskReminderTime: string; // "HH:MM"
+  timezone?: string;        // IANA tz, e.g. "Asia/Kolkata"
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
