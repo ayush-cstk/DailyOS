@@ -131,7 +131,16 @@ export async function GET(req: NextRequest) {
     await Promise.all(tasks);
   } catch (err: any) {
     console.error("Cron error:", err);
-    return NextResponse.json({ error: "Internal error", detail: err?.message ?? String(err) }, { status: 500 });
+    return NextResponse.json({
+      error: "Internal error",
+      detail: err?.message ?? String(err),
+      env: {
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        keyLength: process.env.FIREBASE_PRIVATE_KEY?.length ?? 0,
+        keyHasPemHeader: process.env.FIREBASE_PRIVATE_KEY?.includes("BEGIN PRIVATE KEY") ?? false,
+      },
+    }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, sent, time: new Date().toISOString() });
