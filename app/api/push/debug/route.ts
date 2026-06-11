@@ -51,10 +51,38 @@ export async function GET(req: NextRequest) {
       results.push(entry);
     }
 
+    // Also dump notificationPrefs so we can see times + timezone vs current time
+    const prefsSnap = await adminDb.collection("notificationPrefs").get();
+    const prefs = prefsSnap.docs.map(d => {
+      const p = d.data() as any;
+      const tz = p.timezone || "UTC";
+      let nowInTz = "";
+      try {
+        nowInTz = new Intl.DateTimeFormat("en-GB", {
+          timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false,
+        }).format(new Date());
+      } catch { /* ignore */ }
+      return {
+        userId: d.id,
+        timezone: tz,
+        serverNowInThatTz: nowInTz,
+        mealReminders: p.mealReminders,
+        breakfastTime: p.breakfastTime,
+        lunchTime: p.lunchTime,
+        dinnerTime: p.dinnerTime,
+        workoutReminders: p.workoutReminders,
+        workoutTime: p.workoutTime,
+        taskReminders: p.taskReminders,
+        taskReminderTime: p.taskReminderTime,
+      };
+    });
+
     return NextResponse.json({
       count: results.length,
       vapidPublicKeyTail: (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").slice(-8),
+      serverUtcNow: new Date().toISOString(),
       subscriptions: results,
+      prefs,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message ?? String(err) }, { status: 500 });
