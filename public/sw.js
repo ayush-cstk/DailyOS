@@ -1,5 +1,5 @@
 // DailyOS Service Worker — handles Web Push notifications
-const CACHE_NAME = "dailyos-v1";
+const CACHE_NAME = "dailyos-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -20,7 +20,7 @@ self.addEventListener("push", (event) => {
     payload = { title: "DailyOS", body: event.data.text() };
   }
 
-  const { title, body, icon, badge, tag, url, data } = payload;
+  const { title, body, icon, badge, tag, url, image, actions, data } = payload;
 
   const options = {
     body: body || "",
@@ -29,12 +29,19 @@ self.addEventListener("push", (event) => {
     tag: tag || "dailyos-notification",
     renotify: true,
     requireInteraction: false,
-    vibrate: [100, 50, 100],
+    silent: false,
+    vibrate: [80, 40, 80, 40, 120],
+    timestamp: Date.now(),
+    // Large hero image (Android / desktop only — iOS ignores it gracefully)
+    ...(image ? { image } : {}),
     data: { url: url || "/dashboard", ...data },
-    actions: [
-      { action: "open",    title: "Open DailyOS" },
-      { action: "dismiss", title: "Dismiss" },
-    ],
+    // Use the action buttons sent from the server, falling back to a sensible default
+    actions: Array.isArray(actions) && actions.length
+      ? actions
+      : [
+          { action: "open",    title: "Open DailyOS" },
+          { action: "dismiss", title: "Dismiss" },
+        ],
   };
 
   event.waitUntil(self.registration.showNotification(title || "DailyOS", options));

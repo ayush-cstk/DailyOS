@@ -31,13 +31,81 @@ interface PushSubscription {
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
 }
 
-async function sendPush(sub: PushSubscription["subscription"], title: string, body: string, url: string) {
+interface PushAction {
+  action: string;
+  title: string;
+}
+
+interface PushPayload {
+  title: string;
+  body: string;
+  url: string;
+  actions?: PushAction[];
+}
+
+async function sendPush(sub: PushSubscription["subscription"], payload: PushPayload) {
   try {
-    await webpush.sendNotification(sub, JSON.stringify({ title, body, url, tag: `${title}-${Date.now()}` }));
+    await webpush.sendNotification(
+      sub,
+      JSON.stringify({ ...payload, tag: `${payload.url}-${Date.now()}` }),
+    );
   } catch (err: any) {
     // 410 Gone = subscription expired — could clean it up here
     if (err.statusCode !== 410) console.error("Push failed:", err.message);
   }
+}
+
+// ── Notification copy ───────────────────────────────────────────────────────────
+// Multiple variants per reminder, rotated daily so they never feel robotic.
+const MESSAGES: Record<string, { title: string; body: string }[]> = {
+  breakfast: [
+    { title: "☀️ Morning fuel",     body: "You've fasted all night — break it right. Log breakfast 🍳" },
+    { title: "🍳 Rise & dine",       body: "What's powering your morning? Tap to log it." },
+    { title: "⚡ Kickstart the day",  body: "Protein now = focus later. Log your first meal." },
+    { title: "🥑 Good morning!",      body: "First meal sets the tone. Don't skip the log." },
+  ],
+  lunch: [
+    { title: "🥗 Midday refuel",     body: "Halfway there — keep the momentum. Log lunch." },
+    { title: "🍱 Lunch o'clock",     body: "Fuel the afternoon grind. What did you eat?" },
+    { title: "🌮 Hungry yet?",        body: "Log lunch and stay on top of your macros." },
+    { title: "⏱️ Lunch check-in",    body: "Quick log now — future-you will thank you." },
+  ],
+  dinner: [
+    { title: "🍽️ Dinner time",       body: "Last meal of the day — log it and close the loop." },
+    { title: "🌙 Evening fuel",       body: "Wind down right. Log dinner to hit today's goals." },
+    { title: "🥘 What's cooking?",    body: "Don't let dinner slip by un-logged." },
+    { title: "✨ Finish strong",      body: "One log away from a perfect nutrition day." },
+  ],
+  workout: [
+    { title: "💪 Time to move",       body: "Your session is calling. Show up for yourself today." },
+    { title: "🔥 Let's get it",       body: "Sweat now, shine later. Log your workout." },
+    { title: "🏋️ Training time",      body: "Consistency beats intensity. Don't skip today." },
+    { title: "⚡ Body check",         body: "Even 20 minutes counts. Log your session." },
+  ],
+  tasks: [
+    { title: "📋 Day's almost done",  body: "Got pending tasks? Knock them out before bed." },
+    { title: "✅ Quick check-in",     body: "Review what's left and end the day on a win." },
+    { title: "🌟 Finish the list",    body: "Close out your tasks — momentum into tomorrow." },
+    { title: "⏳ Evening review",      body: "A clear list = a clear mind. Tap to check in." },
+  ],
+};
+
+const ACTIONS: Record<string, PushAction[]> = {
+  meal:    [{ action: "log", title: "🍽️ Log meal" },   { action: "dismiss", title: "Later" }],
+  workout: [{ action: "log", title: "💪 Log workout" }, { action: "dismiss", title: "Later" }],
+  tasks:   [{ action: "log", title: "📋 View tasks" },  { action: "dismiss", title: "Later" }],
+};
+
+/** Day-of-year, used to rotate message variants so they feel fresh each day */
+function dayOfYear(d: Date): number {
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d.getTime() - start.getTime()) / 86_400_000);
+}
+
+/** Pick today's variant for a given reminder category */
+function pick(key: string): { title: string; body: string } {
+  const variants = MESSAGES[key];
+  return variants[dayOfYear(new Date()) % variants.length];
 }
 
 // ── Cron handler ──────────────────────────────────────────────────────────────
@@ -81,48 +149,19 @@ export async function GET(req: NextRequest) {
 
       const tz = prefs.timezone || "UTC";
 
-      const reminders: Array<{ enabled: boolean; time: string; title: string; body: string; url: string }> = [
-        {
-          enabled: prefs.mealReminders,
-          time: prefs.breakfastTime,
-          title: "🍳 Breakfast time",
-          body: "Log your breakfast to start tracking nutrition!",
-          url: "/dashboard/diet",
-        },
-        {
-          enabled: prefs.mealReminders,
-          time: prefs.lunchTime,
-          title: "🥗 Lunch reminder",
-          body: "Don't forget to log your lunch!",
-          url: "/dashboard/diet",
-        },
-        {
-          enabled: prefs.mealReminders,
-          time: prefs.dinnerTime,
-          title: "🍽 Dinner reminder",
-          body: "Log your dinner to hit your daily macro goals.",
-          url: "/dashboard/diet",
-        },
-        {
-          enabled: prefs.workoutReminders,
-          time: prefs.workoutTime,
-          title: "💪 Workout reminder",
-          body: "Time to crush your session! Log it to track your progress.",
-          url: "/dashboard/workout",
-        },
-        {
-          enabled: prefs.taskReminders,
-          time: prefs.taskReminderTime,
-          title: "✅ Task reminder",
-          body: "You have pending tasks for today. Check them off!",
-          url: "/dashboard/tasks",
-        },
+      const reminders: Array<{ enabled: boolean; time: string; key: string; url: string; actions: PushAction[] }> = [
+        { enabled: prefs.mealReminders,    time: prefs.breakfastTime,    key: "breakfast", url: "/dashboard/diet",    actions: ACTIONS.meal },
+        { enabled: prefs.mealReminders,    time: prefs.lunchTime,        key: "lunch",     url: "/dashboard/diet",    actions: ACTIONS.meal },
+        { enabled: prefs.mealReminders,    time: prefs.dinnerTime,       key: "dinner",    url: "/dashboard/diet",    actions: ACTIONS.meal },
+        { enabled: prefs.workoutReminders, time: prefs.workoutTime,      key: "workout",   url: "/dashboard/workout", actions: ACTIONS.workout },
+        { enabled: prefs.taskReminders,    time: prefs.taskReminderTime, key: "tasks",     url: "/dashboard/tasks",   actions: ACTIONS.tasks },
       ];
 
       reminders.forEach(r => {
         if (!r.enabled || !matchesNow(r.time, tz)) return;
+        const { title, body } = pick(r.key);
         subs.forEach(sub => {
-          tasks.push(sendPush(sub, r.title, r.body, r.url));
+          tasks.push(sendPush(sub, { title, body, url: r.url, actions: r.actions }));
           sent++;
         });
       });
