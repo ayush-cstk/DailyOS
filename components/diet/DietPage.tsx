@@ -4,8 +4,9 @@ import { useSession } from "next-auth/react";
 import {
   Plus, Minus, Utensils, Camera, Trash2, X, Loader2, Settings,
   Flame, ChevronLeft, ChevronRight, Sparkles, CheckCircle2,
-  Bookmark, BookmarkPlus, Search
+  Bookmark, BookmarkPlus, Search, Mic
 } from "lucide-react";
+import VoiceMealModal from "@/components/diet/VoiceMealModal";
 import { cn, todayString, formatDate, localDateString } from "@/lib/utils";
 import {
   getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals,
@@ -89,6 +90,7 @@ export default function DietPage() {
   const [showGoals, setShowGoals] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [showVoiceMeal, setShowVoiceMeal] = useState(false);
   const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [savingTemplate, setSavingTemplate] = useState<{ name: string; macros: MealMacros } | null>(null);
 
@@ -145,6 +147,17 @@ export default function DietPage() {
     setShowAddMeal(false);
     setShowScanner(false);
     toast("Meal logged! 🍽️", "success");
+  };
+
+  const handleLogVoiceMeals = async (parsedMeals: { name: string; macros: MealMacros }[]) => {
+    const created: MealEntry[] = [];
+    for (const pm of parsedMeals) {
+      const c = await addMeal({ userId, date, name: pm.name, macros: pm.macros, createdAt: Date.now() });
+      created.push(c);
+    }
+    setMeals((prev) => [...prev, ...created]);
+    setShowVoiceMeal(false);
+    if (created.length) toast(`Logged ${created.length} meal${created.length !== 1 ? "s" : ""} 🎤`, "success");
   };
 
   const handleSaveTemplate = async (t: Omit<MealTemplate, "id">) => {
@@ -206,6 +219,10 @@ export default function DietPage() {
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Fuel your performance</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setShowVoiceMeal(true)} className="btn-secondary text-sm flex items-center gap-1.5" title="Log meal by voice">
+            <Mic className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Voice</span>
+          </button>
           <button onClick={() => setShowSaved(true)} className="btn-secondary text-sm flex items-center gap-1.5">
             <Bookmark className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Saved</span>
@@ -398,6 +415,9 @@ export default function DietPage() {
           onSave={handleSaveTemplate}
           onClose={() => setSavingTemplate(null)}
         />
+      )}
+      {showVoiceMeal && (
+        <VoiceMealModal onAdd={handleLogVoiceMeals} onClose={() => setShowVoiceMeal(false)} />
       )}
     </div>
   );

@@ -46,17 +46,27 @@ export async function POST(req: NextRequest) {
 
 TRANSCRIPT: "${transcript}"
 
-Extract every exercise and its sets. Rules:
+Extract STRENGTH exercises (with sets) and CARDIO separately.
+
+STRENGTH rules:
 - "3 sets of 10 at 60 kg" → 3 identical sets, each reps 10, weight 60, unit "kg".
 - If different reps or weights are given per set ("10, 8 and 6 reps"), create one set for each.
 - Bodyweight moves (push ups, pull ups, plank, dips, crunches with no weight mentioned) → unit "bodyweight" and omit weight.
 - Default unit is "kg" unless "lbs" or "pounds" is said.
 - "plank for 30 seconds" → reps 30, unit "bodyweight" (treat seconds as reps).
-- Ignore filler words. Use clean, properly-capitalised exercise names.
-- If the transcript has no exercises, return {"exercises":[]}.
+- Use clean, properly-capitalised exercise names.
+
+CARDIO rules:
+- activity must be EXACTLY one of: walking, running, cycling, hiking, mountain_climbing, swimming, jump_rope, elliptical, stair_climbing, rowing.
+- durationMinutes: number of minutes (convert hours to minutes).
+- distanceKm: optional number — convert miles to km (1 mile = 1.61 km).
+- "ran 5k in 30 minutes" → {"activity":"running","durationMinutes":30,"distanceKm":5}.
+- "cycled for an hour" → {"activity":"cycling","durationMinutes":60}.
+
+Ignore filler words. If a section has nothing, return an empty array for it.
 
 Return ONLY raw JSON, no markdown, exactly in this shape:
-{"exercises":[{"name":"Bench Press","sets":[{"reps":10,"weight":60,"unit":"kg"}]}]}`;
+{"exercises":[{"name":"Bench Press","sets":[{"reps":10,"weight":60,"unit":"kg"}]}],"cardio":[{"activity":"running","durationMinutes":30,"distanceKm":5}]}`;
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
@@ -97,7 +107,25 @@ Return ONLY raw JSON, no markdown, exactly in this shape:
         return { name: e.name.trim(), sets };
       });
 
-    return NextResponse.json({ transcript, exercises: clean });
+    const CARDIO_ACTIVITIES = new Set([
+      "walking", "running", "cycling", "hiking", "mountain_climbing",
+      "swimming", "jump_rope", "elliptical", "stair_climbing", "rowing",
+    ]);
+    const rawCardio = Array.isArray(parsed.cardio) ? parsed.cardio : [];
+    const cardio = rawCardio
+      .filter((c: any) => c && CARDIO_ACTIVITIES.has(c.activity) && Number(c.durationMinutes) > 0)
+      .map((c: any) => {
+        const entry: { activity: string; durationMinutes: number; distanceKm?: number } = {
+          activity: c.activity,
+          durationMinutes: Math.round(Number(c.durationMinutes)),
+        };
+        if (c.distanceKm != null && !Number.isNaN(Number(c.distanceKm)) && Number(c.distanceKm) > 0) {
+          entry.distanceKm = Math.round(Number(c.distanceKm) * 100) / 100;
+        }
+        return entry;
+      });
+
+    return NextResponse.json({ transcript, exercises: clean, cardio });
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? "Failed to process audio", transcript }, { status: 500 });
   }

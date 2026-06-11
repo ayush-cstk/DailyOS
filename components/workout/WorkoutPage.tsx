@@ -138,10 +138,27 @@ export default function WorkoutPage() {
     setNewExerciseName(""); setShowAddExercise(false);
   };
   const removeExercise = (id: string) => setExercises((prev) => prev.filter((e) => e.id !== id));
-  const addVoiceExercises = (newOnes: ExerciseLog[]) => {
-    setExercises((prev) => [...prev, ...newOnes]);
+  const addVoiceExercises = (
+    newOnes: ExerciseLog[],
+    newCardio: { activity: CardioActivity; durationMinutes: number; distanceKm?: number }[],
+  ) => {
+    if (newOnes.length) setExercises((prev) => [...prev, ...newOnes]);
+    if (newCardio.length) {
+      const logs: CardioLog[] = newCardio.map((c) => {
+        const log: CardioLog = {
+          id: generateId(),
+          activity: c.activity,
+          durationMinutes: c.durationMinutes,
+          caloriesBurned: calcCardioCals(c.activity, c.durationMinutes, bwKg),
+        };
+        if (c.distanceKm != null) log.distanceKm = c.distanceKm;
+        return log;
+      });
+      setCardioLogs((prev) => [...prev, ...logs]);
+    }
     setShowVoice(false);
-    if (newOnes.length) toast(`Added ${newOnes.length} exercise${newOnes.length !== 1 ? "s" : ""} from voice 🎤`, "success");
+    const n = newOnes.length + newCardio.length;
+    if (n) toast(`Added ${n} item${n !== 1 ? "s" : ""} from voice 🎤`, "success");
   };
   const addSet = (exId: string) => setExercises((prev) => prev.map((ex) => ex.id === exId ? { ...ex, sets: [...ex.sets, newSet()] } : ex));
   const removeSet = (exId: string, setId: string) => setExercises((prev) => prev.map((ex) => ex.id === exId ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) } : ex));
