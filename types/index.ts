@@ -113,6 +113,19 @@ export interface DietDay {
   createdAt: number;
 }
 
+// ── Meal Templates (saved meals) ──────────────────────────────────────────────
+export interface MealTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  baseQuantity: number;   // the quantity the stored macros correspond to (e.g. 1, or 100)
+  unit: string;           // e.g. "serving", "g", "bowl", "piece"
+  macros: MealMacros;     // macros for exactly baseQuantity of `unit`
+  createdAt: number;
+  lastUsedAt?: number;    // for sorting recently-used meals to the top
+  useCount?: number;      // how many times it's been logged
+}
+
 // ── Workout Templates ──────────────────────────────────────────────────────────
 export interface TemplateExercise {
   id: string;

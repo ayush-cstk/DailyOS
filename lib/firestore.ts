@@ -3,7 +3,7 @@ import {
   getDocs, getDoc, query, where, setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals, WorkoutTemplate, NotificationPrefs } from "@/types";
+import type { Task, Project, WorkoutSession, BodyWeightEntry, MealEntry, MacroGoals, WorkoutTemplate, NotificationPrefs, MealTemplate } from "@/types";
 
 // ── Projects ───────────────────────────────────────────────────────────────────
 export async function getProjects(userId: string): Promise<Project[]> {
@@ -116,6 +116,28 @@ export async function addMeal(meal: Omit<MealEntry, "id">): Promise<MealEntry> {
 
 export async function deleteMeal(mealId: string) {
   await deleteDoc(doc(db, "meals", mealId));
+}
+
+// ── Meal Templates (saved meals) ─────────────────────────────────────────────
+export async function getMealTemplates(userId: string): Promise<MealTemplate[]> {
+  const q = query(collection(db, "mealTemplates"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as MealTemplate))
+    .sort((a, b) => (b.lastUsedAt ?? b.createdAt) - (a.lastUsedAt ?? a.createdAt));
+}
+
+export async function saveMealTemplate(template: Omit<MealTemplate, "id">): Promise<MealTemplate> {
+  const ref = await addDoc(collection(db, "mealTemplates"), template);
+  return { id: ref.id, ...template };
+}
+
+export async function updateMealTemplate(id: string, updates: Partial<MealTemplate>) {
+  await updateDoc(doc(db, "mealTemplates", id), updates);
+}
+
+export async function deleteMealTemplate(id: string) {
+  await deleteDoc(doc(db, "mealTemplates", id));
 }
 
 // ── Macro Goals ────────────────────────────────────────────────────────────────

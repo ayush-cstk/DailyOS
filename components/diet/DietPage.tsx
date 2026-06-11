@@ -2,14 +2,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import {
-  Plus, Utensils, Camera, Trash2, X, Loader2, Settings,
-  Flame, ChevronLeft, ChevronRight, Sparkles, CheckCircle2
+  Plus, Minus, Utensils, Camera, Trash2, X, Loader2, Settings,
+  Flame, ChevronLeft, ChevronRight, Sparkles, CheckCircle2,
+  Bookmark, BookmarkPlus, Search
 } from "lucide-react";
 import { cn, todayString, formatDate, localDateString } from "@/lib/utils";
-import { getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals } from "@/lib/firestore";
+import {
+  getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals,
+  getMealTemplates, saveMealTemplate, updateMealTemplate, deleteMealTemplate,
+} from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
-import type { MealEntry, MealMacros, MacroGoals } from "@/types";
+import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 
 const defaultGoals: MacroGoals = { calories: 2000, proteinG: 150, carbsG: 200, fatG: 65 };
 
@@ -84,10 +88,18 @@ export default function DietPage() {
   const [showAddMeal, setShowAddMeal] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [templates, setTemplates] = useState<MealTemplate[]>([]);
+  const [savingTemplate, setSavingTemplate] = useState<{ name: string; macros: MealMacros } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     getMacroGoals(userId).then((g) => { if (g) setGoals(g); });
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    getMealTemplates(userId).then(setTemplates);
   }, [userId]);
 
   useEffect(() => {
@@ -135,6 +147,35 @@ export default function DietPage() {
     toast("Meal logged! 🍽️", "success");
   };
 
+  const handleSaveTemplate = async (t: Omit<MealTemplate, "id">) => {
+    const created = await saveMealTemplate(t);
+    setTemplates((prev) => [created, ...prev]);
+    setSavingTemplate(null);
+    toast("Saved to your meals 🔖", "success");
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    await deleteMealTemplate(id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    toast("Saved meal removed", "info");
+  };
+
+  const handleLogFromTemplate = async (meal: Omit<MealEntry, "id">, templateId: string) => {
+    const created = await addMeal(meal);
+    setMeals((prev) => [...prev, created]);
+    // bump usage so frequently/recently used meals float to the top
+    const existing = templates.find((t) => t.id === templateId);
+    const patch = { lastUsedAt: Date.now(), useCount: (existing?.useCount ?? 0) + 1 };
+    updateMealTemplate(templateId, patch);
+    setTemplates((prev) =>
+      prev
+        .map((t) => (t.id === templateId ? { ...t, ...patch } : t))
+        .sort((a, b) => (b.lastUsedAt ?? b.createdAt) - (a.lastUsedAt ?? a.createdAt))
+    );
+    setShowSaved(false);
+    toast("Meal logged! 🍽️", "success");
+  };
+
   const handleDeleteMeal = async (id: string) => {
     await deleteMeal(id);
     setMeals((prev) => prev.filter((m) => m.id !== id));
@@ -165,6 +206,10 @@ export default function DietPage() {
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5 font-medium">Fuel your performance</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setShowSaved(true)} className="btn-secondary text-sm flex items-center gap-1.5">
+            <Bookmark className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Saved</span>
+          </button>
           <button onClick={() => setShowGoals(true)} className="btn-secondary text-sm flex items-center gap-1.5">
             <Settings className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Goals</span>
@@ -309,7 +354,12 @@ export default function DietPage() {
         ) : (
           <div className="space-y-2 stagger">
             {meals.map((m) => (
-              <MealCard key={m.id} meal={m} onDelete={() => handleDeleteMeal(m.id)} />
+              <MealCard
+                key={m.id}
+                meal={m}
+                onDelete={() => handleDeleteMeal(m.id)}
+                onSave={() => setSavingTemplate({ name: m.name, macros: m.macros })}
+              />
             ))}
           </div>
         )}
@@ -317,7 +367,13 @@ export default function DietPage() {
 
       {/* ── Modals ── */}
       {showAddMeal && (
-        <AddMealModal userId={userId} date={date} onSave={handleAddMeal} onClose={() => setShowAddMeal(false)} />
+        <AddMealModal
+          userId={userId}
+          date={date}
+          onSave={handleAddMeal}
+          onSaveTemplate={handleSaveTemplate}
+          onClose={() => setShowAddMeal(false)}
+        />
       )}
       {showScanner && (
         <MealScannerModal userId={userId} date={date} onSave={handleAddMeal} onClose={() => setShowScanner(false)} />
@@ -325,12 +381,30 @@ export default function DietPage() {
       {showGoals && (
         <GoalsModal goals={goals} onSave={handleSaveGoals} onClose={() => setShowGoals(false)} />
       )}
+      {showSaved && (
+        <SavedMealsModal
+          templates={templates}
+          userId={userId}
+          date={date}
+          onLog={handleLogFromTemplate}
+          onDelete={handleDeleteTemplate}
+          onClose={() => setShowSaved(false)}
+        />
+      )}
+      {savingTemplate && (
+        <SaveTemplateModal
+          userId={userId}
+          initial={savingTemplate}
+          onSave={handleSaveTemplate}
+          onClose={() => setSavingTemplate(null)}
+        />
+      )}
     </div>
   );
 }
 
 // ── MealCard ──────────────────────────────────────────────────────────────────
-function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void }) {
+function MealCard({ meal, onDelete, onSave }: { meal: MealEntry; onDelete: () => void; onSave: () => void }) {
   const macros = [
     { label: "kcal", value: Math.round(meal.macros.calories),  bg: "bg-amber-100 dark:bg-amber-500/10",   text: "text-amber-700 dark:text-amber-400",   dot: "bg-amber-400" },
     { label: "P",    value: Math.round(meal.macros.proteinG) + "g", bg: "bg-blue-100 dark:bg-blue-500/10",  text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-400" },
@@ -358,6 +432,14 @@ function MealCard({ meal, onDelete }: { meal: MealEntry; onDelete: () => void })
           ))}
         </div>
       </div>
+      <button
+        onClick={onSave}
+        title="Save as a reusable meal"
+        className="p-2 rounded-lg hover:text-emerald-500 hover:bg-emerald-500/10 active:scale-90 transition-all flex-shrink-0"
+        style={{ color: "var(--text-3)" }}
+      >
+        <BookmarkPlus className="w-4 h-4" />
+      </button>
       <button
         onClick={onDelete}
         className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all flex-shrink-0"
@@ -387,14 +469,19 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 // ── AddMealModal ──────────────────────────────────────────────────────────────
-function AddMealModal({ userId, date, onSave, onClose }: {
-  userId: string; date: string; onSave: (m: Omit<MealEntry, "id">) => void; onClose: () => void;
+function AddMealModal({ userId, date, onSave, onSaveTemplate, onClose }: {
+  userId: string;
+  date: string;
+  onSave: (m: Omit<MealEntry, "id">) => void;
+  onSaveTemplate: (t: Omit<MealTemplate, "id">) => void;
+  onClose: () => void;
 }) {
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState(false);
   const lastEstimated = useRef("");
@@ -428,16 +515,20 @@ function AddMealModal({ userId, date, onSave, onClose }: {
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({
-      userId, date, name: name.trim(),
-      macros: {
-        calories: Number(calories) || 0,
-        proteinG: Number(protein) || 0,
-        carbsG: Number(carbs) || 0,
-        fatG: Number(fat) || 0,
-      },
-      createdAt: Date.now(),
-    });
+    const macros = {
+      calories: Number(calories) || 0,
+      proteinG: Number(protein) || 0,
+      carbsG: Number(carbs) || 0,
+      fatG: Number(fat) || 0,
+    };
+    if (saveAsTemplate) {
+      onSaveTemplate({
+        userId, name: name.trim(),
+        baseQuantity: 1, unit: "serving",
+        macros, createdAt: Date.now(), useCount: 0,
+      });
+    }
+    onSave({ userId, date, name: name.trim(), macros, createdAt: Date.now() });
   };
 
   return (
@@ -511,6 +602,24 @@ function AddMealModal({ userId, date, onSave, onClose }: {
             <Sparkles className="w-3 h-3" /> AI estimated — edit if needed
           </p>
         )}
+
+        {/* Save as reusable meal */}
+        <button
+          type="button"
+          onClick={() => setSaveAsTemplate((v) => !v)}
+          className="w-full flex items-center gap-2.5 py-2 px-1 group"
+        >
+          <span className={cn(
+            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0",
+            saveAsTemplate ? "bg-emerald-500 border-emerald-500" : "border-gray-300 dark:border-gray-600"
+          )}>
+            {saveAsTemplate && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+          </span>
+          <span className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--text-2)" }}>
+            <Bookmark className="w-3.5 h-3.5 text-emerald-500" />
+            Save as a reusable meal
+          </span>
+        </button>
 
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
@@ -734,6 +843,341 @@ function GoalsModal({ goals, onSave, onClose }: {
       <div className="flex gap-2">
         <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
         <button onClick={handleSave} className="btn-primary flex-1 text-sm">Save goals</button>
+      </div>
+    </Modal>
+  );
+}
+
+// ── SaveTemplateModal ─────────────────────────────────────────────────────────
+// Save a meal (its macros) as a reusable template tied to a base quantity + unit.
+function SaveTemplateModal({ userId, initial, onSave, onClose }: {
+  userId: string;
+  initial: { name: string; macros: MealMacros };
+  onSave: (t: Omit<MealTemplate, "id">) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [baseQuantity, setBaseQuantity] = useState("1");
+  const [unit, setUnit] = useState("serving");
+  const [macros, setMacros] = useState({
+    calories: String(Math.round(initial.macros.calories)),
+    protein: String(Math.round(initial.macros.proteinG)),
+    carbs: String(Math.round(initial.macros.carbsG)),
+    fat: String(Math.round(initial.macros.fatG)),
+    fiber: initial.macros.fiberG != null ? String(Math.round(initial.macros.fiberG)) : "",
+  });
+
+  const units = ["serving", "g", "bowl", "piece", "cup", "plate"];
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      userId,
+      name: name.trim(),
+      baseQuantity: Number(baseQuantity) || 1,
+      unit: unit.trim() || "serving",
+      macros: {
+        calories: Number(macros.calories) || 0,
+        proteinG: Number(macros.protein) || 0,
+        carbsG: Number(macros.carbs) || 0,
+        fatG: Number(macros.fat) || 0,
+        ...(macros.fiber ? { fiberG: Number(macros.fiber) } : {}),
+      },
+      createdAt: Date.now(),
+      useCount: 0,
+    });
+  };
+
+  const fields = [
+    { key: "calories" as const, label: "Calories (kcal)" },
+    { key: "protein" as const, label: "Protein (g)" },
+    { key: "carbs" as const, label: "Carbs (g)" },
+    { key: "fat" as const, label: "Fat (g)" },
+  ];
+
+  return (
+    <Modal title="Save as a reusable meal" onClose={onClose}>
+      <div className="space-y-3">
+        <div>
+          <label className="label">Meal name *</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </div>
+
+        <div>
+          <label className="label">These macros are for…</label>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="number"
+              className="input text-sm w-20 flex-shrink-0"
+              value={baseQuantity}
+              onChange={(e) => setBaseQuantity(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {units.map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setUnit(u)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-bold transition-all",
+                    unit === u ? "bg-emerald-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                  )}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--text-3)" }}>
+            Later you can log any quantity and the macros scale automatically.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {fields.map(({ key, label }) => (
+            <div key={key}>
+              <label className="label">{label}</label>
+              <input
+                type="number"
+                className="input text-sm"
+                value={macros[key]}
+                onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
+          <div className="col-span-2">
+            <label className="label">Fiber (g)</label>
+            <input
+              type="number"
+              className="input text-sm"
+              placeholder="0"
+              value={macros.fiber}
+              onChange={(e) => setMacros((m) => ({ ...m, fiber: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
+          <button onClick={handleSave} disabled={!name.trim()} className="btn-primary flex-1 text-sm">Save meal</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ── SavedMealsModal ───────────────────────────────────────────────────────────
+// Browse saved meals; selecting one opens the quantity-scaling view to log it.
+function SavedMealsModal({ templates, userId, date, onLog, onDelete, onClose }: {
+  templates: MealTemplate[];
+  userId: string;
+  date: string;
+  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<MealTemplate | null>(null);
+
+  if (selected) {
+    return (
+      <LogTemplateView
+        template={selected}
+        userId={userId}
+        date={date}
+        onBack={() => setSelected(null)}
+        onLog={onLog}
+        onClose={onClose}
+      />
+    );
+  }
+
+  const filtered = templates.filter((t) =>
+    t.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  return (
+    <Modal title="Saved meals" onClose={onClose}>
+      {templates.length === 0 ? (
+        <div className="text-center py-10">
+          <Bookmark className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-2" />
+          <p className="text-sm font-medium" style={{ color: "var(--text-2)" }}>No saved meals yet</p>
+          <p className="text-xs mt-1 px-4" style={{ color: "var(--text-3)" }}>
+            Tap the bookmark icon on any logged meal to save it here for one-tap logging.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
+            <input
+              className="input pl-9 text-sm"
+              placeholder="Search saved meals…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2 max-h-[52dvh] overflow-y-auto -mx-1 px-1">
+            {filtered.map((t) => (
+              <div
+                key={t.id}
+                role="button"
+                onClick={() => setSelected(t)}
+                className="card flex items-center gap-3 cursor-pointer hover:shadow-md transition-all"
+                style={{ borderLeftColor: "#10B981", borderLeftWidth: "3px" }}
+              >
+                <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Utensils className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: "var(--text-1)" }}>{t.name}</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
+                    Per {t.baseQuantity} {t.unit} · {Math.round(t.macros.calories)} kcal · {Math.round(t.macros.proteinG)}P {Math.round(t.macros.carbsG)}C {Math.round(t.macros.fatG)}F
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
+                  className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all flex-shrink-0"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-center text-xs py-6" style={{ color: "var(--text-3)" }}>
+                No meals match “{search}”.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ── LogTemplateView ───────────────────────────────────────────────────────────
+// Pick a quantity for a saved meal; macros scale proportionally and stay editable.
+function LogTemplateView({ template, userId, date, onBack, onLog, onClose }: {
+  template: MealTemplate;
+  userId: string;
+  date: string;
+  onBack: () => void;
+  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => void;
+  onClose: () => void;
+}) {
+  const scaledFor = (q: number) => {
+    const f = (q || 0) / (template.baseQuantity || 1);
+    return {
+      calories: String(Math.round(template.macros.calories * f)),
+      protein: String(Math.round(template.macros.proteinG * f)),
+      carbs: String(Math.round(template.macros.carbsG * f)),
+      fat: String(Math.round(template.macros.fatG * f)),
+      fiber: template.macros.fiberG != null ? String(Math.round(template.macros.fiberG * f)) : "",
+    };
+  };
+
+  const [qty, setQty] = useState(String(template.baseQuantity));
+  const [macros, setMacros] = useState(scaledFor(template.baseQuantity));
+
+  // Changing quantity re-scales the macros; editing a macro field afterwards is preserved.
+  const setQtyAndScale = (v: string) => {
+    setQty(v);
+    setMacros(scaledFor(Number(v)));
+  };
+
+  const stepSize = template.baseQuantity >= 1 ? 1 : 0.5;
+  const step = (delta: number) => {
+    const next = Math.max(0, Math.round(((Number(qty) || 0) + delta) * 10) / 10);
+    setQtyAndScale(String(next));
+  };
+
+  const handleLog = () => {
+    const q = Number(qty) || 0;
+    const label = q === template.baseQuantity ? template.name : `${template.name} (${qty} ${template.unit})`;
+    onLog(
+      {
+        userId,
+        date,
+        name: label,
+        macros: {
+          calories: Number(macros.calories) || 0,
+          proteinG: Number(macros.protein) || 0,
+          carbsG: Number(macros.carbs) || 0,
+          fatG: Number(macros.fat) || 0,
+          ...(macros.fiber ? { fiberG: Number(macros.fiber) } : {}),
+        },
+        createdAt: Date.now(),
+      },
+      template.id,
+    );
+  };
+
+  const fields = [
+    { key: "calories" as const, label: "Calories (kcal)" },
+    { key: "protein" as const, label: "Protein (g)" },
+    { key: "carbs" as const, label: "Carbs (g)" },
+    { key: "fat" as const, label: "Fat (g)" },
+  ];
+
+  return (
+    <Modal title={template.name} onClose={onClose}>
+      <div className="space-y-4">
+        <button onClick={onBack} className="text-xs font-semibold text-emerald-500 flex items-center gap-1 -mt-1">
+          <ChevronLeft className="w-3.5 h-3.5" /> All saved meals
+        </button>
+
+        {/* Quantity stepper */}
+        <div>
+          <label className="label">Quantity</label>
+          <div className="flex items-center gap-2">
+            <button onClick={() => step(-stepSize)} className="btn-secondary px-3 py-2"><Minus className="w-4 h-4" /></button>
+            <input
+              type="number"
+              className="input text-sm text-center flex-1"
+              value={qty}
+              onChange={(e) => setQtyAndScale(e.target.value)}
+            />
+            <span className="text-xs font-bold w-14 text-center truncate" style={{ color: "var(--text-2)" }}>{template.unit}</span>
+            <button onClick={() => step(stepSize)} className="btn-secondary px-3 py-2"><Plus className="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        {/* Scaled macros — editable */}
+        <div className="grid grid-cols-2 gap-3">
+          {fields.map(({ key, label }) => (
+            <div key={key}>
+              <label className="label">{label}</label>
+              <input
+                type="number"
+                className="input text-sm"
+                value={macros[key]}
+                onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
+          {template.macros.fiberG != null && (
+            <div className="col-span-2">
+              <label className="label">Fiber (g)</label>
+              <input
+                type="number"
+                className="input text-sm"
+                value={macros.fiber}
+                onChange={(e) => setMacros((m) => ({ ...m, fiber: e.target.value }))}
+              />
+            </div>
+          )}
+        </div>
+
+        <p className="text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
+          Macros scale with quantity — tweak any value before logging.
+        </p>
+
+        <div className="flex gap-2 pt-1">
+          <button onClick={onBack} className="btn-secondary flex-1 text-sm">Back</button>
+          <button onClick={handleLog} className="btn-primary flex-1 text-sm">Log meal</button>
+        </div>
       </div>
     </Modal>
   );
