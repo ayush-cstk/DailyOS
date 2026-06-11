@@ -5,7 +5,7 @@ import {
   Plus, Dumbbell, Trash2, ChevronDown, ChevronUp, Sparkles, Scale, Clock,
   Save, History, X, Loader2, Flame, Activity, PersonStanding, Bike,
   Mountain, Waves, Footprints, Timer, MapPin, TrendingUp, LayoutTemplate,
-  BookOpen, Check, Pencil,
+  BookOpen, Check, Pencil, Mic,
 } from "lucide-react";
 import { cn, generateId, todayString, formatDate, localDateString } from "@/lib/utils";
 import { saveWorkoutSession, getWorkoutSessions, getBodyWeightEntries, logBodyWeight, getWorkoutTemplates, saveWorkoutTemplate, deleteWorkoutTemplate } from "@/lib/firestore";
@@ -13,6 +13,7 @@ import { WORKOUT_PRESETS } from "@/lib/workoutPresets";
 import { setWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import { MarkdownText } from "@/components/ui/MarkdownText";
+import VoiceLogModal from "@/components/workout/VoiceLogModal";
 import type { WorkoutSession, ExerciseLog, SetLog, WeightUnit, BodyWeightEntry, CardioLog, CardioActivity, WorkoutTemplate } from "@/types";
 
 // ── Cardio config ─────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ export default function WorkoutPage() {
   const [exercises, setExercises] = useState<ExerciseLog[]>([]);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [newExerciseName, setNewExerciseName] = useState("");
+  const [showVoice, setShowVoice] = useState(false);
 
   // Cardio
   const [cardioLogs, setCardioLogs] = useState<CardioLog[]>([]);
@@ -136,6 +138,11 @@ export default function WorkoutPage() {
     setNewExerciseName(""); setShowAddExercise(false);
   };
   const removeExercise = (id: string) => setExercises((prev) => prev.filter((e) => e.id !== id));
+  const addVoiceExercises = (newOnes: ExerciseLog[]) => {
+    setExercises((prev) => [...prev, ...newOnes]);
+    setShowVoice(false);
+    if (newOnes.length) toast(`Added ${newOnes.length} exercise${newOnes.length !== 1 ? "s" : ""} from voice 🎤`, "success");
+  };
   const addSet = (exId: string) => setExercises((prev) => prev.map((ex) => ex.id === exId ? { ...ex, sets: [...ex.sets, newSet()] } : ex));
   const removeSet = (exId: string, setId: string) => setExercises((prev) => prev.map((ex) => ex.id === exId ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) } : ex));
   const updateSet = (exId: string, setId: string, updates: Partial<SetLog>) => setExercises((prev) => prev.map((ex) => ex.id === exId ? { ...ex, sets: ex.sets.map((s) => s.id === setId ? { ...s, ...updates } : s) } : ex));
@@ -510,10 +517,16 @@ export default function WorkoutPage() {
               <div className="card border-2 border-dashed border-blue-100 dark:border-blue-900/40 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/10 text-center py-6 animate-fade-in">
                 <p className="font-bold text-sm" style={{ color: "var(--text-2)" }}>No strength exercises yet</p>
                 <p className="text-xs mt-0.5 mb-3" style={{ color: "var(--text-3)" }}>Bench, squats, deadlifts — add them here</p>
-                <button onClick={() => setShowAddExercise(true)}
-                  className="inline-flex items-center gap-2 btn-primary text-sm px-4 py-2">
-                  <Plus className="w-3.5 h-3.5" /> Add exercise
-                </button>
+                <div className="flex items-center justify-center gap-2">
+                  <button onClick={() => setShowAddExercise(true)}
+                    className="inline-flex items-center gap-2 btn-primary text-sm px-4 py-2">
+                    <Plus className="w-3.5 h-3.5" /> Add exercise
+                  </button>
+                  <button onClick={() => setShowVoice(true)}
+                    className="inline-flex items-center gap-2 btn-secondary text-sm px-4 py-2">
+                    <Mic className="w-3.5 h-3.5" /> Log by voice
+                  </button>
+                </div>
               </div>
             )}
 
@@ -536,11 +549,18 @@ export default function WorkoutPage() {
                 <button onClick={() => setShowAddExercise(false)} className="btn-ghost p-2"><X className="w-4 h-4" /></button>
               </div>
             ) : exercises.length > 0 ? (
-              <button onClick={() => setShowAddExercise(true)}
-                className="w-full card border-dashed border-2 flex items-center justify-center gap-2 text-sm font-semibold hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/5 py-3 mt-3 transition-all"
-                style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-                <Plus className="w-4 h-4" /> Add exercise
-              </button>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => setShowAddExercise(true)}
+                  className="flex-1 card border-dashed border-2 flex items-center justify-center gap-2 text-sm font-semibold hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/5 py-3 transition-all"
+                  style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+                  <Plus className="w-4 h-4" /> Add exercise
+                </button>
+                <button onClick={() => setShowVoice(true)}
+                  className="card border-dashed border-2 flex items-center justify-center gap-2 text-sm font-semibold hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-500/5 py-3 px-4 transition-all"
+                  style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+                  <Mic className="w-4 h-4" /> Voice
+                </button>
+              </div>
             ) : null}
           </div>
 
@@ -748,6 +768,11 @@ export default function WorkoutPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Voice logging */}
+      {showVoice && (
+        <VoiceLogModal onAdd={addVoiceExercises} onClose={() => setShowVoice(false)} />
       )}
     </div>
   );
