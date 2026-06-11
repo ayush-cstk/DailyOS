@@ -15,7 +15,7 @@ function DarkCard({ children, style }: { children: React.ReactNode; style?: Reac
   return (
     <div style={{
       background: "#141414", border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: "14px", padding: "14px", ...style,
+      borderRadius: "14px", padding: "14px", minWidth: 0, overflow: "hidden", ...style,
     }}>
       {children}
     </div>
@@ -95,7 +95,7 @@ function DarkAppPreview() {
       </div>
 
       {/* Row 1: Nutrition (2/3) + Weight (1/3) */}
-      <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:"10px", marginBottom:"10px" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:"10px", marginBottom:"10px", minWidth:0 }}>
 
         {/* Nutrition card */}
         <DarkCard>
@@ -166,7 +166,7 @@ function DarkAppPreview() {
       </div>
 
       {/* Row 2: Tasks + Workout */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", minWidth:0 }}>
 
         {/* Tasks card */}
         <DarkCard>

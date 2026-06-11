@@ -324,10 +324,12 @@ export default function AriaChatbot() {
           {chatContent}
         </div>
 
-        {/* Trigger button — separate from the panel so it's always tappable */}
+        {/* Trigger button — hidden while the sheet is open so it can't overlap
+            the input/send button; the panel header has its own close (X). */}
         <button
           onClick={() => setOpen(o => !o)}
           title="Ask Orbit"
+          aria-hidden={open}
           className={cn(
             "fixed bottom-20 right-4 z-[151]",
             "w-12 h-12 rounded-2xl flex items-center justify-center",
@@ -335,7 +337,12 @@ export default function AriaChatbot() {
             "shadow-lg shadow-indigo-400/30",
             "hover:shadow-xl hover:shadow-indigo-400/40 active:scale-95",
           )}
-          style={{ transition: "transform 0.2s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.2s ease" }}
+          style={{
+            transition: "transform 0.2s cubic-bezier(0.34,1.4,0.64,1), opacity 0.2s ease, box-shadow 0.2s ease",
+            opacity: open ? 0 : 1,
+            transform: open ? "scale(0.8)" : "scale(1)",
+            pointerEvents: open ? "none" : "auto",
+          }}
         >
           {triggerIcon}
         </button>
