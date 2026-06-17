@@ -9,6 +9,7 @@ import {
   Brain, Target, Star, ChevronRight, Sparkles, Camera, TrendingUp,
   Activity, Shield, Clock, Users
 } from "lucide-react";
+import WorkflowCards from "@/components/landing/WorkflowCards";
 
 // ── Dark app preview (hero mockup) ───────────────────────────────────────────
 function DarkCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -313,7 +314,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Image src={logoSrc} alt="DailyOS" width={32} height={32} className="rounded-xl" />
-            <span className="font-black text-gray-900 dark:text-white text-lg tracking-tight">DailyOS</span>
+            <span className="font-display font-extrabold text-gray-900 dark:text-white text-xl tracking-tight">DailyOS</span>
           </div>
           <div className="flex items-center gap-3">
             {session ? (
@@ -326,7 +327,7 @@ export default function LandingPage() {
                   Sign in
                 </button>
                 <button onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="bg-gray-900 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-gray-800 active:scale-95 transition-all">
+                  className="btn-primary text-sm">
                   Get started free
                 </button>
               </>
@@ -337,35 +338,37 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section className="relative pt-32 pb-20 px-5 overflow-hidden">
-        {/* Background blobs */}
+        {/* Warm background glow */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-100 via-purple-50 to-transparent opacity-70 dark:opacity-[0.07] dark:from-indigo-500 dark:via-purple-500 blur-3xl" />
-          <div className="absolute top-60 -left-40 w-[400px] h-[400px] rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-50 dark:opacity-[0.06] dark:from-blue-500 blur-3xl" />
-          <div className="absolute bottom-0 right-1/3 w-[300px] h-[300px] rounded-full bg-gradient-to-br from-emerald-50 to-transparent opacity-60 dark:opacity-[0.05] dark:from-emerald-500 blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#FF5E4D]/20 via-[#FF9D42]/10 to-transparent opacity-80 dark:opacity-[0.16] blur-3xl" />
+          <div className="absolute top-60 -left-40 w-[440px] h-[440px] rounded-full bg-gradient-to-br from-[#FF9D42]/16 to-transparent opacity-70 dark:opacity-[0.12] blur-3xl" />
+          <div className="absolute bottom-0 right-1/3 w-[320px] h-[320px] rounded-full bg-gradient-to-br from-[#FF7863]/14 to-transparent opacity-70 dark:opacity-[0.10] blur-3xl" />
         </div>
 
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold px-4 py-2 rounded-full mb-8 animate-slide-down uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full mb-8 animate-rise uppercase tracking-wider"
+            style={{ background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--accent-glow)" }}>
             <Zap className="w-3.5 h-3.5" /> Your personal daily operating system
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-gray-900 dark:text-white leading-[1.06] tracking-tight mb-6 animate-slide-up">
+          <h1 className="font-display text-[2.9rem] leading-[0.98] sm:text-6xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-[-0.03em] mb-6 animate-rise" style={{animationDelay:"40ms"}}>
             Tasks. Gym. Diet.
             <br />
             <span className="gradient-text">All in one place.</span>
           </h1>
 
-          <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-slide-up" style={{animationDelay:"60ms"}}>
+          <p className="text-lg sm:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-rise" style={{animationDelay:"100ms"}}>
             DailyOS brings your to-dos, workout tracking, and nutrition logging into one
             beautifully simple app — with AI that actually helps you improve.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center animate-slide-up" style={{animationDelay:"120ms"}}>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center animate-rise" style={{animationDelay:"160ms"}}>
             <button
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              className="group inline-flex items-center justify-center gap-3 bg-gray-900 text-white font-bold px-8 py-4 rounded-2xl text-base hover:bg-gray-800 active:scale-[0.97] transition-all duration-200 shadow-xl shadow-gray-900/20"
+              className="group pressable inline-flex items-center justify-center gap-2.5 text-white font-bold px-8 py-4 rounded-2xl text-base"
+              style={{ background: "var(--accent-gradient)", boxShadow: "0 10px 34px -8px var(--accent-glow)" }}
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -374,11 +377,11 @@ export default function LandingPage() {
               Continue with Google
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
-            <a href="#features" className="inline-flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 font-semibold px-8 py-4 rounded-2xl text-base border border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.97] transition-all">
+            <a href="#features" className="pressable inline-flex items-center justify-center gap-2 text-gray-700 dark:text-gray-200 font-bold px-8 py-4 rounded-2xl text-base border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
               See how it works <ChevronRight className="w-4 h-4" />
             </a>
           </div>
-          <p className="mt-4 text-sm text-gray-400 animate-slide-up" style={{animationDelay:"160ms"}}>Free forever · No credit card · Works on iPhone</p>
+          <p className="mt-4 text-sm text-gray-400 animate-rise" style={{animationDelay:"220ms"}}>Free forever · No credit card · Works Best on iPhone</p>
         </div>
 
         {/* ── App Preview ── */}
@@ -391,15 +394,21 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="py-16 px-5 bg-gray-900">
+      <section className="py-16 px-5 bg-[#16110f] dark:bg-black border-y border-black/5 dark:border-white/[0.06]">
         <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-3 gap-6 text-center">
+          <div className="grid grid-cols-3 gap-3 sm:gap-5">
             {stats.map((s) => (
-              <div key={s.label}>
-                <p className="text-4xl sm:text-5xl font-black text-white mb-1">
+              <div
+                key={s.label}
+                className="group rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-6 sm:px-4 sm:py-8 text-center transition-all duration-200 hover:-translate-y-1 hover:bg-white/[0.05]"
+                style={{ transitionTimingFunction: "var(--ease-out)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent-glow)"; e.currentTarget.style.boxShadow = "0 16px 40px -16px var(--accent-glow)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; e.currentTarget.style.boxShadow = ""; }}
+              >
+                <p className="font-display text-3xl sm:text-5xl font-extrabold text-white leading-none mb-1.5">
                   <Counter to={s.value} suffix={s.suffix} />
                 </p>
-                <p className="text-sm text-gray-400 font-medium">{s.label}</p>
+                <p className="text-[11px] sm:text-sm text-gray-400 font-medium">{s.label}</p>
               </div>
             ))}
           </div>
@@ -410,8 +419,8 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-5 bg-white dark:bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Features</p>
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>Features</p>
+            <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-[-0.02em]">
               Built for how you actually live
             </h2>
             <p className="text-lg text-gray-400 max-w-xl mx-auto">
@@ -433,28 +442,19 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="py-24 px-5 bg-[#F7F8FC] dark:bg-[#0a0a0a]">
+      <section className="py-24 px-5 bg-[#f7f6f4] dark:bg-[#0a0a0a]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Workflow</p>
-            <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">One app. Three modules. Your whole day.</h2>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>Workflow</p>
+            <h2 className="font-display text-4xl font-extrabold text-gray-900 dark:text-white tracking-[-0.02em]">One app. Three modules. Your whole day.</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-              { step: "01", icon: CheckCircle2, color: "text-violet-600 bg-violet-100 dark:bg-violet-900/40", title: "Plan your day", desc: "Add tasks under projects. Switch between daily and weekly views. Tap to complete." },
-              { step: "02", icon: Dumbbell, color: "text-blue-600 bg-blue-100 dark:bg-blue-900/40", title: "Log your workout", desc: "Add exercises, sets, reps, weights. Save it. Hit AI Summary for a coach report." },
-              { step: "03", icon: Utensils, color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40", title: "Track your nutrition", desc: "Snap a meal photo or log manually. Watch your macros fill up throughout the day." },
-            ].map((step) => (
-              <div key={step.step} className="card text-center">
-                <div className={`w-12 h-12 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-4`}>
-                  <step.icon className="w-5.5 h-5.5" />
-                </div>
-                <span className="text-xs font-black text-gray-300 tracking-widest">{step.step}</span>
-                <h3 className="font-bold text-gray-900 dark:text-white mt-1 mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{step.desc}</p>
-              </div>
-            ))}
-          </div>
+          <WorkflowCards
+            items={[
+              { step: "01", icon: CheckCircle2, iconClass: "text-violet-600 bg-violet-100 dark:bg-violet-900/40", title: "Plan your day", desc: "Add tasks under projects. Switch between daily and weekly views. Tap to complete." },
+              { step: "02", icon: Dumbbell, iconClass: "text-blue-600 bg-blue-100 dark:bg-blue-900/40", title: "Log your workout", desc: "Add exercises, sets, reps, weights. Save it. Hit AI Summary for a coach report." },
+              { step: "03", icon: Utensils, iconClass: "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40", title: "Track your nutrition", desc: "Snap a meal photo or log manually. Watch your macros fill up throughout the day." },
+            ]}
+          />
         </div>
       </section>
 
@@ -465,7 +465,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-center gap-1 mb-4">
               {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />)}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">People who actually use it</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-[-0.02em]">People who actually use it</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {testimonials.map((t) => (
@@ -485,13 +485,13 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-24 px-5 bg-gray-900 relative overflow-hidden">
+      <section className="py-24 px-5 bg-[#16110f] dark:bg-black relative overflow-hidden border-t border-black/5 dark:border-white/[0.06]">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-900/40 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-900/40 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(255,94,77,0.22)" }} />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: "rgba(255,157,66,0.18)" }} />
         </div>
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-black text-white mb-5 tracking-tight">
+          <h2 className="font-display text-4xl sm:text-5xl font-extrabold text-white mb-5 tracking-[-0.02em]">
             Start your daily OS
           </h2>
           <p className="text-lg text-gray-400 mb-10 leading-relaxed">

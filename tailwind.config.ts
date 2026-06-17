@@ -23,9 +23,10 @@ const config: Config = {
           900: "#0c4a6e",
         },
         accent: {
-          DEFAULT: "#6366f1",
-          light: "#818cf8",
-          dark: "#4f46e5",
+          DEFAULT: "#FF5E4D",
+          light: "#FF7060",
+          dark: "#E84A3A",
+          amber: "#FF9D42",
         },
         surface: {
           DEFAULT: "#ffffff",
@@ -35,6 +36,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Bricolage Grotesque", "Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
         card: "0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07)",

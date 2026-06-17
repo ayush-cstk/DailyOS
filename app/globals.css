@@ -2,36 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Fonts are self-hosted via next/font in app/layout.tsx (no runtime external request, no FOUT) */
 
 /* ── Dark mode CSS variables ── */
 :root {
   --surface-0: #ffffff;
-  --surface-1: #f7f8fc;
-  --surface-2: #f1f3f9;
+  --surface-1: #f7f6f4;
+  --surface-2: #f1efec;
   --border: rgba(0,0,0,0.08);
   --border-subtle: rgba(0,0,0,0.05);
   --text-1: #0a0a0a;
-  --text-2: #6b7280;
-  --text-3: #9ca3af;
-  --glow-color: rgba(99,102,241,0);
+  --text-2: #6b6560;
+  --text-3: #9c958d;
+  --glow-color: rgba(255,94,77,0);
+
+  /* ── Warm Sunset accent system ── */
+  --accent:        #FF5E4D;          /* coral — primary */
+  --accent-hover:  #FF7060;
+  --accent-2:      #FF9D42;          /* amber — secondary */
+  --accent-soft:   rgba(255,94,77,0.12);
+  --accent-glow:   rgba(255,94,77,0.35);
+  --accent-gradient: linear-gradient(135deg, #FF5E4D 0%, #FF9D42 100%);
+  --on-accent:     #ffffff;
+
+  /* ── Typography (vars provided by next/font in layout.tsx) ── */
+  --font-display: var(--font-bricolage), 'Inter', system-ui, sans-serif;
+  --font-sans:    var(--font-inter), system-ui, sans-serif;
+
+  /* ── Motion ── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark {
   --surface-0: #000000;
   --surface-1: #0a0a0a;
-  --surface-2: #111111;
-  --border: rgba(255,255,255,0.07);
-  --border-subtle: rgba(255,255,255,0.04);
+  --surface-2: #131313;
+  --border: rgba(255,255,255,0.08);
+  --border-subtle: rgba(255,255,255,0.05);
   --text-1: #ffffff;
-  --text-2: #888888;
-  --text-3: #555555;
-  --glow-color: rgba(99,102,241,0.12);
+  --text-2: #8a8580;
+  --text-3: #57534e;
+  --glow-color: rgba(255,94,77,0.14);
+
+  --accent-soft: rgba(255,94,77,0.14);
 }
 
 @layer base {
   * { box-sizing: border-box; }
-  html { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  html { font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
   body {
     background-color: var(--surface-1);
     color: var(--text-1);
@@ -40,19 +59,28 @@
   }
 }
 
+/* Distinctive display face for headlines + big numbers */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 @layer components {
   /* ── Buttons ── */
   .btn-primary {
-    @apply bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-xl
-           hover:bg-indigo-500 active:scale-[0.97] transition-all duration-150
+    @apply text-white font-bold px-4 py-2.5 rounded-xl
+           active:scale-[0.96] transition-all duration-150
            disabled:opacity-40 disabled:cursor-not-allowed;
-    box-shadow: 0 0 0 0 rgba(99,102,241,0);
+    background: var(--accent);
+    transition-timing-function: var(--ease-spring);
+    box-shadow: 0 4px 14px -4px var(--accent-glow);
   }
+  .btn-primary:hover { background: var(--accent-hover); }
   .dark .btn-primary {
-    box-shadow: 0 0 16px rgba(99,102,241,0.25);
+    box-shadow: 0 6px 20px -4px var(--accent-glow);
   }
   .dark .btn-primary:hover {
-    box-shadow: 0 0 24px rgba(99,102,241,0.4);
+    box-shadow: 0 8px 28px -4px var(--accent-glow);
   }
   .btn-secondary {
     @apply font-medium px-4 py-2.5 rounded-xl active:scale-[0.97] transition-all duration-150
@@ -90,29 +118,32 @@
     @apply card transition-all duration-200 cursor-pointer;
   }
   .card-hover:hover {
-    border-color: rgba(99,102,241,0.25);
-    box-shadow: 0 0 0 1px rgba(99,102,241,0.08), 0 8px 32px rgba(0,0,0,0.08);
-    transform: translateY(-1px);
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 10px 36px rgba(0,0,0,0.10);
+    transform: translateY(-2px);
   }
   .dark .card-hover:hover {
-    border-color: rgba(99,102,241,0.2);
-    box-shadow: 0 0 0 1px rgba(99,102,241,0.06), 0 0 24px rgba(99,102,241,0.06);
-    transform: translateY(-1px);
+    border-color: var(--accent-glow);
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 28px var(--accent-soft);
+    transform: translateY(-2px);
   }
 
   /* ── Form elements ── */
   .input {
-    @apply w-full px-3.5 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20
-           focus:border-indigo-500 transition-all duration-150;
+    @apply w-full px-3.5 py-2.5 rounded-xl text-sm focus:outline-none transition-all duration-150;
     background: var(--surface-1);
     border: 1px solid var(--border);
     color: var(--text-1);
   }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
   .input::placeholder { color: var(--text-3); }
   .dark .input { background: var(--surface-2); }
   .dark .input:focus {
-    border-color: rgba(99,102,241,0.5);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   .label {
@@ -123,15 +154,14 @@
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
   }
 
-  /* ── Gradient text ── */
+  /* ── Gradient text (warm sunset) ── */
   .gradient-text {
-    @apply bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent;
-  }
-  .dark .gradient-text {
-    @apply from-indigo-400 via-purple-400 to-blue-400;
+    background: var(--accent-gradient);
+    @apply bg-clip-text text-transparent;
   }
   .gradient-text-warm {
-    @apply bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent;
+    background: var(--accent-gradient);
+    @apply bg-clip-text text-transparent;
   }
 
   /* ── Section accent strips ── */
@@ -226,13 +256,46 @@
 .animate-ripple     { animation: completion-ripple 0.48s ease-out forwards; }
 .completing-glow    { animation: task-complete-glow 0.65s ease forwards; }
 
+/* ── Bold & expressive motion primitives ── */
+@keyframes pop {
+  0%   { opacity: 0; transform: scale(0.82) translateY(8px); }
+  60%  { transform: scale(1.04) translateY(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes blur-in {
+  from { opacity: 0; filter: blur(8px); transform: translateY(12px); }
+  to   { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+.animate-pop  { animation: pop 0.42s var(--ease-spring) both; }
+.animate-rise { animation: rise 0.6s var(--ease-out) both; }
+.animate-blur-in { animation: blur-in 0.7s var(--ease-out) both; }
+
+/* Tactile press — apply to any interactive element */
+.pressable { transition: transform 0.16s var(--ease-spring); }
+.pressable:active { transform: scale(0.95); }
+
 /* Staggered children */
-.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > * { animation-delay: 0ms; }
 .stagger > *:nth-child(2) { animation-delay: 60ms; }
 .stagger > *:nth-child(3) { animation-delay: 120ms; }
 .stagger > *:nth-child(4) { animation-delay: 180ms; }
 .stagger > *:nth-child(5) { animation-delay: 240ms; }
 .stagger > *:nth-child(6) { animation-delay: 300ms; }
+.stagger > *:nth-child(7) { animation-delay: 360ms; }
+.stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* Skeleton loading */
 .skeleton {
@@ -298,7 +361,7 @@
   height: min(65vw, 700px);
   top: -15%;
   right: -10%;
-  background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 60%, transparent 100%);
+  background: radial-gradient(circle, rgba(255,94,77,0.20) 0%, rgba(255,94,77,0.05) 60%, transparent 100%);
   filter: blur(80px);
   animation: aurora-drift-1 18s ease-in-out infinite;
 }
@@ -307,7 +370,7 @@
   height: min(55vw, 620px);
   bottom: -10%;
   left: -8%;
-  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.04) 60%, transparent 100%);
+  background: radial-gradient(circle, rgba(255,157,66,0.16) 0%, rgba(255,157,66,0.04) 60%, transparent 100%);
   filter: blur(90px);
   animation: aurora-drift-2 22s ease-in-out infinite;
 }
@@ -316,7 +379,7 @@
   height: min(42vw, 500px);
   top: 40%;
   left: 35%;
-  background: radial-gradient(circle, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.03) 60%, transparent 100%);
+  background: radial-gradient(circle, rgba(255,120,99,0.12) 0%, rgba(255,120,99,0.03) 60%, transparent 100%);
   filter: blur(72px);
   animation: aurora-drift-3 14s ease-in-out infinite;
 }
@@ -366,10 +429,11 @@
   border: 1px solid var(--border);
 }
 
-/* Futuristic glow effect for accent elements */
-.dark .glow-indigo {
-  box-shadow: 0 0 20px rgba(99,102,241,0.3), 0 0 40px rgba(99,102,241,0.1);
-}
+/* Warm glow for accent elements (legacy names kept so existing usages inherit the new accent) */
+.glow-accent,
+.dark .glow-indigo,
 .dark .glow-purple {
-  box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 0 40px rgba(139,92,246,0.1);
+  box-shadow: 0 0 22px rgba(255,94,77,0.32), 0 0 44px rgba(255,94,77,0.12);
 }
+.text-accent { color: var(--accent); }
+.bg-accent-soft { background: var(--accent-soft); }

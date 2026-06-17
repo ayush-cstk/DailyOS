@@ -332,18 +332,27 @@ export default function DietPage() {
       {/* ── Scan CTA ── */}
       <button
         onClick={() => setShowScanner(true)}
-        className="w-full mb-5 relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 p-px"
+        className="group w-full mb-5 rounded-2xl p-3.5 flex items-center gap-3 transition-all duration-200 active:scale-[0.99]"
+        style={{
+          background: "linear-gradient(135deg, rgba(16,185,129,0.14), rgba(13,148,136,0.04))",
+          border: "1px solid rgba(16,185,129,0.28)",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 16px 40px -16px rgba(16,185,129,0.4)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
       >
-        <div className="rounded-[calc(1rem-1px)] px-4 py-3.5 flex items-center justify-center gap-2.5 hover:bg-emerald-500/5 transition-all"
-          style={{ background: "var(--surface-0)" }}>
-          <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>Scan meal with AI</p>
-            <p className="text-xs" style={{ color: "var(--text-3)" }}>Take a photo — AI Model estimates macros</p>
-          </div>
-          <Camera className="w-4 h-4 text-emerald-500 ml-auto" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3"
+          style={{ background: "linear-gradient(135deg,#10B981,#0D9488)" }}>
+          <Sparkles className="w-5 h-5 text-white" />
+        </div>
+        <div className="text-left flex-1 min-w-0">
+          <p className="text-sm font-bold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
+            Scan meal with AI
+            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(16,185,129,0.16)", color: "#10b981" }}>AI</span>
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>Snap a photo — instant macros in seconds</p>
+        </div>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(16,185,129,0.12)" }}>
+          <Camera className="w-4 h-4" style={{ color: "#10b981" }} />
         </div>
       </button>
 
@@ -426,47 +435,63 @@ export default function DietPage() {
 // ── MealCard ──────────────────────────────────────────────────────────────────
 function MealCard({ meal, onDelete, onSave }: { meal: MealEntry; onDelete: () => void; onSave: () => void }) {
   const macros = [
-    { label: "kcal", value: Math.round(meal.macros.calories),  bg: "bg-amber-100 dark:bg-amber-500/10",   text: "text-amber-700 dark:text-amber-400",   dot: "bg-amber-400" },
-    { label: "P",    value: Math.round(meal.macros.proteinG) + "g", bg: "bg-blue-100 dark:bg-blue-500/10",  text: "text-blue-700 dark:text-blue-400",   dot: "bg-blue-400" },
-    { label: "C",    value: Math.round(meal.macros.carbsG) + "g",   bg: "bg-emerald-100 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-400" },
-    { label: "F",    value: Math.round(meal.macros.fatG) + "g",     bg: "bg-rose-100 dark:bg-rose-500/10",  text: "text-rose-700 dark:text-rose-400",   dot: "bg-rose-400" },
+    { label: "P", value: Math.round(meal.macros.proteinG), color: "#60a5fa" },
+    { label: "C", value: Math.round(meal.macros.carbsG),   color: "#34d399" },
+    { label: "F", value: Math.round(meal.macros.fatG),     color: "#fb7185" },
     ...(meal.macros.fiberG != null && meal.macros.fiberG > 0
-      ? [{ label: "fiber", value: Math.round(meal.macros.fiberG) + "g", bg: "bg-violet-100 dark:bg-violet-500/10", text: "text-violet-700 dark:text-violet-400", dot: "bg-violet-400" }]
+      ? [{ label: "Fib", value: Math.round(meal.macros.fiberG), color: "#a78bfa" }]
       : []),
   ];
 
   return (
-    <div className="card flex items-center gap-3 hover:shadow-md transition-all duration-200 animate-slide-up"
-      style={{ borderLeftColor: "#10B981", borderLeftWidth: "3px" }}>
-      <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-        <Utensils className="w-4 h-4 text-emerald-500" />
+    <div
+      className="group relative rounded-2xl p-3 flex items-center gap-3 transition-all duration-200 animate-slide-up"
+      style={{ background: "var(--surface-0)", border: "1px solid var(--border)" }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.borderColor = "rgba(16,185,129,0.32)"; e.currentTarget.style.boxShadow = "0 14px 38px -16px rgba(16,185,129,0.4)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = ""; }}
+    >
+      {/* emerald gradient tile */}
+      <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105"
+        style={{ background: "linear-gradient(135deg,#10B981,#0D9488)" }}>
+        <Utensils className="w-5 h-5 text-white" />
       </div>
+
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate" style={{ color: "var(--text-1)" }}>{meal.name}</p>
-        <div className="flex flex-wrap gap-1.5 mt-1.5">
-          {macros.map(({ label, value, bg, text, dot }) => (
-            <span key={label} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold", bg, text)}>
-              <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", dot)} />
-              {value} {label}
+        <p className="font-semibold text-sm truncate pr-1" style={{ color: "var(--text-1)" }}>{meal.name}</p>
+        <div className="flex items-center gap-2 mt-1.5">
+          {/* calories — the hero stat */}
+          <span className="font-display text-sm font-extrabold leading-none" style={{ color: "var(--text-1)" }}>
+            {Math.round(meal.macros.calories)}
+            <span className="text-[10px] font-bold ml-0.5" style={{ color: "var(--text-3)" }}>kcal</span>
+          </span>
+          <span className="w-px h-3 rounded-full" style={{ background: "var(--border)" }} />
+          {/* macros — sleek dotted values */}
+          {macros.map(({ label, value, color }) => (
+            <span key={label} className="inline-flex items-center gap-1 text-[11px] font-bold whitespace-nowrap" style={{ color: "var(--text-2)" }}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+              {value}<span style={{ color: "var(--text-3)" }}>{label}</span>
             </span>
           ))}
         </div>
       </div>
-      <button
-        onClick={onSave}
-        title="Save as a reusable meal"
-        className="p-2 rounded-lg hover:text-emerald-500 hover:bg-emerald-500/10 active:scale-90 transition-all flex-shrink-0"
-        style={{ color: "var(--text-3)" }}
-      >
-        <BookmarkPlus className="w-4 h-4" />
-      </button>
-      <button
-        onClick={onDelete}
-        className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all flex-shrink-0"
-        style={{ color: "var(--text-3)" }}
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+
+      <div className="flex items-center flex-shrink-0">
+        <button
+          onClick={onSave}
+          title="Save as a reusable meal"
+          className="p-2 rounded-lg hover:text-emerald-500 hover:bg-emerald-500/10 active:scale-90 transition-all"
+          style={{ color: "var(--text-3)" }}
+        >
+          <BookmarkPlus className="w-4 h-4" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all"
+          style={{ color: "var(--text-3)" }}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
