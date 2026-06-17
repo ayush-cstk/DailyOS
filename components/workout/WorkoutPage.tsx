@@ -487,15 +487,15 @@ export default function WorkoutPage() {
         <div className="space-y-4">
           {/* Date & Duration */}
           <div className="card">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="min-w-0">
                 <label className="label">Date</label>
-                <input type="date" className="input text-sm min-w-0" value={date}
+                <input type="date" className="input text-sm min-w-0 max-w-full appearance-none" value={date}
                   onChange={(e) => setDate(e.target.value)} />
               </div>
               <div className="min-w-0">
                 <label className="label flex items-center gap-1"><Clock className="w-3 h-3 flex-shrink-0" /><span className="truncate">Duration (min)</span></label>
-                <input type="number" inputMode="numeric" className="input text-sm min-w-0" min={0} placeholder="e.g. 60"
+                <input type="number" inputMode="numeric" className="input text-sm min-w-0 max-w-full" min={0} placeholder="e.g. 60"
                   value={duration || ""} onChange={(e) => setDuration(Number(e.target.value))} />
               </div>
             </div>
